@@ -1,0 +1,39 @@
+@* GridV2 - CSS Grid with class-based player highlighting (poc-v2 style) *@
+
+<style>
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(@GridSize, 60px);
+    grid-template-rows: repeat(@GridSize, 60px);
+    gap: 2px;
+  }
+  .cell {
+    border: 1px solid black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .player {
+    background-color: yellow;
+  }
+</style>
+
+<div id="grid">
+  @for (int row = 0; row < GridSize; row++)
+  {
+    @for (int col = 0; col < GridSize; col++)
+    {
+      var isPlayer = (row == PlayerRow && col == PlayerCol);
+      <div class="cell @(isPlayer ? "player" : "")" data-row="@row" data-col="@col">
+        @row@col
+      </div>
+    }
+  }
+</div>
+
+@code {
+    [Parameter] public int GridSize { get; set; } = 5;
+    [Parameter] public int PlayerRow { get; set; }
+    [Parameter] public int PlayerCol { get; set; }
+}

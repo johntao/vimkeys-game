@@ -1,4 +1,64 @@
 ﻿@page "/"
+@using p07_vimkeys_game.Components
+@inject IJSRuntime JSRuntime
 
-<PageTitle>Home</PageTitle>
-<h1>Home</h1>
+<PageTitle>Vim Keys Game</PageTitle>
+
+<h1>Vim Keys Game</h1>
+
+<div class="game-info">
+    <p>Player Position: <strong>(@playerRow, @playerCol)</strong></p>
+    <p>Use vim keys: <strong>h</strong>=left, <strong>j</strong>=down, <strong>k</strong>=up, <strong>l</strong>=right</p>
+</div>
+
+<DynamicComponent Type="@gridComponentType"
+                  Parameters="@gridParameters" />
+
+@code {
+    // GAME MAKER DECIDES: Change to typeof(GridV1) for anchor-based rendering
+    private Type gridComponentType = typeof(GridV2);
+
+    private int gridSize = 5;
+    private int playerRow = 0;
+    private int playerCol = 0;
+
+    private Dictionary<string, object> gridParameters => new()
+    {
+        { "GridSize", gridSize },
+        { "PlayerRow", playerRow },
+        { "PlayerCol", playerCol }
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("registerKeyHandler", DotNetObjectReference.Create(this));
+        }
+    }
+
+    [JSInvokable]
+    public void HandleKeyPress(string key)
+    {
+        switch (key)
+        {
+            case "h": // left
+                if (playerCol > 0)
+                    playerCol--;
+                break;
+            case "j": // down
+                if (playerRow < gridSize - 1)
+                    playerRow++;
+                break;
+            case "k": // up
+                if (playerRow > 0)
+                    playerRow--;
+                break;
+            case "l": // right
+                if (playerCol < gridSize - 1)
+                    playerCol++;
+                break;
+        }
+        StateHasChanged();
+    }
+}

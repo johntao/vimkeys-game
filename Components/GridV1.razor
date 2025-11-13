@@ -1,0 +1,42 @@
+@* GridV1 - Anchor-based grid with focus highlighting (poc-v1 style) *@
+
+<style>
+  #grid div {
+    display: flex;
+  }
+  #grid a {
+    width: 60px;
+    height: 60px;
+    border: 1px solid black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: black;
+  }
+  #grid a:focus {
+    background-color: yellow;
+    outline: 2px solid blue;
+    outline-offset: -2px;
+  }
+</style>
+
+<div id="grid">
+  @for (int row = 0; row < GridSize; row++)
+  {
+    <div>
+      @for (int col = 0; col < GridSize; col++)
+      {
+        <a href="javascript:void(0)" data-row="@row" data-col="@col">
+          @row@col
+        </a>
+      }
+    </div>
+  }
+</div>
+
+@code {
+    [Parameter] public int GridSize { get; set; } = 5;
+    [Parameter] public int PlayerRow { get; set; }
+    [Parameter] public int PlayerCol { get; set; }
+}
