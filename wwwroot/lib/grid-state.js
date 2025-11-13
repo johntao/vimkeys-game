@@ -6,6 +6,38 @@ class GridState {
     this.size = size;
     this.currentRow = 0;
     this.currentCol = 0;
+    this.droppables = new Set(); // Store droppable positions as "row,col" strings
+  }
+
+  /**
+   * Add a droppable at specific position
+   */
+  addDroppable(row, col) {
+    this.droppables.add(`${row},${col}`);
+  }
+
+  /**
+   * Check if position has a droppable
+   */
+  hasDroppable(row, col) {
+    return this.droppables.has(`${row},${col}`);
+  }
+
+  /**
+   * Remove droppable at position (when picked up)
+   */
+  removeDroppable(row, col) {
+    return this.droppables.delete(`${row},${col}`);
+  }
+
+  /**
+   * Get all droppable positions
+   */
+  getDroppables() {
+    return Array.from(this.droppables).map(pos => {
+      const [row, col] = pos.split(',').map(Number);
+      return { row, col };
+    });
   }
 
   /**

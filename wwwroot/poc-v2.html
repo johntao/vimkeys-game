@@ -16,9 +16,18 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        position: relative;
       }
       .player {
         background-color: yellow;
+      }
+      .droppable::after {
+        content: '●';
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        font-size: 10px;
+        color: #0066cc;
       }
     </style>
   </head>
@@ -33,6 +42,20 @@
       const grid = document.getElementById('grid');
       const cells = [];
 
+      // Define pre-defined droppable positions
+      const droppablePositions = [
+        { row: 1, col: 2 },
+        { row: 2, col: 1 },
+        { row: 2, col: 3 },
+        { row: 3, col: 2 },
+        { row: 4, col: 4 }
+      ];
+
+      // Add droppables to grid state
+      droppablePositions.forEach(pos => {
+        gridState.addDroppable(pos.row, pos.col);
+      });
+
       // Create 5x5 grid using div cells
       for (let row = 0; row < gridState.size; row++) {
         const rowCells = [];
@@ -42,6 +65,12 @@
           cell.textContent = `${row}${col}`;
           cell.dataset.row = row;
           cell.dataset.col = col;
+
+          // Add droppable class if this cell has a droppable
+          if (gridState.hasDroppable(row, col)) {
+            cell.classList.add('droppable');
+          }
+
           grid.appendChild(cell);
           rowCells.push(cell);
         }
@@ -53,7 +82,7 @@
       cells[initialPos.row][initialPos.col].classList.add('player');
 
       // Setup vim navigation
-      const navigation = new VimNavigation(gridState, (position, direction, oldPosition) => {
+      const navigation = new VimNavigation(gridState, (position, direction) => {
         // Get old position before move
         const oldPos = {
           row: position.row + (direction === 'up' ? 1 : direction === 'down' ? -1 : 0),
@@ -65,6 +94,13 @@
 
         // Add player to new position
         cells[position.row][position.col].classList.add('player');
+
+        // Check if player moved onto a droppable
+        if (gridState.hasDroppable(position.row, position.col)) {
+          // Remove the droppable
+          gridState.removeDroppable(position.row, position.col);
+          cells[position.row][position.col].classList.remove('droppable');
+        }
       });
       navigation.enable();
     </script>
