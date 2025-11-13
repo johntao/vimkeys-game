@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vim Keys Grid Game - V4 (Canvas)</title>
+    <style>
+      canvas {
+        border: 2px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="grid" width="300" height="300"></canvas>
+
+    <script>
+      const canvas = document.getElementById('grid');
+      const ctx = canvas.getContext('2d');
+      const size = 5;
+      const cellSize = canvas.width / size;
+
+      // Player position
+      let currentRow = 0;
+      let currentCol = 0;
+
+      // Draw the grid
+      function drawGrid() {
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw cells
+        for (let row = 0; row < size; row++) {
+          for (let col = 0; col < size; col++) {
+            const x = col * cellSize;
+            const y = row * cellSize;
+
+            // Draw cell border
+            ctx.strokeStyle = 'black';
+            ctx.strokeRect(x, y, cellSize, cellSize);
+
+            // Draw cell label
+            ctx.fillStyle = 'black';
+            ctx.font = '16px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`${row}${col}`, x + cellSize / 2, y + cellSize / 2);
+          }
+        }
+
+        // Draw player
+        const playerX = currentCol * cellSize;
+        const playerY = currentRow * cellSize;
+
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
+        ctx.fillRect(playerX, playerY, cellSize, cellSize);
+
+        // Redraw player cell border (so it's on top)
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(playerX, playerY, cellSize, cellSize);
+        ctx.lineWidth = 1;
+
+        // Redraw player cell label
+        ctx.fillStyle = 'black';
+        ctx.fillText(`${currentRow}${currentCol}`, playerX + cellSize / 2, playerY + cellSize / 2);
+      }
+
+      // Initial draw
+      drawGrid();
+
+      // Handle vim keys navigation
+      document.addEventListener('keydown', (e) => {
+        let newRow = currentRow;
+        let newCol = currentCol;
+
+        switch(e.key.toLowerCase()) {
+          case 'h': // left
+            newCol = Math.max(0, currentCol - 1);
+            break;
+          case 'j': // down
+            newRow = Math.min(size - 1, currentRow + 1);
+            break;
+          case 'k': // up
+            newRow = Math.max(0, currentRow - 1);
+            break;
+          case 'l': // right
+            newCol = Math.min(size - 1, currentCol + 1);
+            break;
+          default:
+            return;
+        }
+
+        // Update position if changed
+        if (newRow !== currentRow || newCol !== currentCol) {
+          currentRow = newRow;
+          currentCol = newCol;
+          drawGrid();
+          e.preventDefault();
+        }
+      });
+    </script>
+  </body>
+</html>

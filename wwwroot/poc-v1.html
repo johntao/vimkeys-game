@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vim Keys Grid Game - V1 (Anchor Focus)</title>
+    <style>
+      #grid div {
+        display: flex;
+      }
+      #grid a {
+        width: 60px;
+        height: 60px;
+        border: 1px solid black;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: black;
+      }
+      #grid a:focus {
+        background-color: yellow;
+        outline: 2px solid blue;
+        outline-offset: -2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="grid"></div>
+
+    <script>
+      // Create 5x5 grid
+      const grid = document.getElementById('grid');
+      const size = 5;
+      const cells = [];
+
+      for (let row = 0; row < size; row++) {
+        const rowDiv = document.createElement('div');
+        const rowCells = [];
+
+        for (let col = 0; col < size; col++) {
+          const anchor = document.createElement('a');
+          anchor.href = 'javascript:void(0)';
+          anchor.textContent = `${row}${col}`;
+          anchor.dataset.row = row;
+          anchor.dataset.col = col;
+          rowDiv.appendChild(anchor);
+          rowCells.push(anchor);
+        }
+
+        grid.appendChild(rowDiv);
+        cells.push(rowCells);
+      }
+
+      // Start at position (0,0)
+      let currentRow = 0;
+      let currentCol = 0;
+      cells[currentRow][currentCol].focus();
+
+      // Handle vim keys navigation
+      document.addEventListener('keydown', (e) => {
+        let newRow = currentRow;
+        let newCol = currentCol;
+
+        switch(e.key.toLowerCase()) {
+          case 'h': // left
+            newCol = Math.max(0, currentCol - 1);
+            break;
+          case 'j': // down
+            newRow = Math.min(size - 1, currentRow + 1);
+            break;
+          case 'k': // up
+            newRow = Math.max(0, currentRow - 1);
+            break;
+          case 'l': // right
+            newCol = Math.min(size - 1, currentCol + 1);
+            break;
+          default:
+            return; // Don't prevent default for other keys
+        }
+
+        // Update position if changed
+        if (newRow !== currentRow || newCol !== currentCol) {
+          currentRow = newRow;
+          currentCol = newCol;
+          cells[currentRow][currentCol].focus();
+          e.preventDefault(); // Prevent default only for hjkl keys
+        }
+      });
+    </script>
+  </body>
+</html>

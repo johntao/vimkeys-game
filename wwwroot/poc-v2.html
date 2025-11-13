@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vim Keys Grid Game - V2 (CSS Grid with Div Cells)</title>
+    <style>
+      #grid {
+        display: grid;
+        grid-template-columns: repeat(5, 60px);
+        grid-template-rows: repeat(5, 60px);
+        gap: 2px;
+      }
+      .cell {
+        border: 1px solid black;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .player {
+        background-color: yellow;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="grid"></div>
+
+    <script>
+      const grid = document.getElementById('grid');
+      const size = 5;
+      const cells = [];
+
+      // Create 5x5 grid using div cells
+      for (let row = 0; row < size; row++) {
+        const rowCells = [];
+        for (let col = 0; col < size; col++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.textContent = `${row}${col}`;
+          cell.dataset.row = row;
+          cell.dataset.col = col;
+          grid.appendChild(cell);
+          rowCells.push(cell);
+        }
+        cells.push(rowCells);
+      }
+
+      // Start at position (0,0)
+      let currentRow = 0;
+      let currentCol = 0;
+      cells[currentRow][currentCol].classList.add('player');
+
+      // Handle vim keys navigation
+      document.addEventListener('keydown', (e) => {
+        let newRow = currentRow;
+        let newCol = currentCol;
+
+        switch(e.key.toLowerCase()) {
+          case 'h': // left
+            newCol = Math.max(0, currentCol - 1);
+            break;
+          case 'j': // down
+            newRow = Math.min(size - 1, currentRow + 1);
+            break;
+          case 'k': // up
+            newRow = Math.max(0, currentRow - 1);
+            break;
+          case 'l': // right
+            newCol = Math.min(size - 1, currentCol + 1);
+            break;
+          default:
+            return;
+        }
+
+        // Update position if changed
+        if (newRow !== currentRow || newCol !== currentCol) {
+          // Remove player from old position
+          cells[currentRow][currentCol].classList.remove('player');
+
+          // Update position
+          currentRow = newRow;
+          currentCol = newCol;
+
+          // Add player to new position
+          cells[currentRow][currentCol].classList.add('player');
+
+          e.preventDefault();
+        }
+      });
+    </script>
+  </body>
+</html>
