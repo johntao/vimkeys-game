@@ -1,5 +1,7 @@
 ﻿@page "/"
 @using p07_vimkeys_game.Components
+@using p07_vimkeys_game.Domain.Entities
+@using p07_vimkeys_game.Domain.ValueObjects
 @inject IJSRuntime JSRuntime
 
 <PageTitle>Vim Keys Game</PageTitle>
@@ -7,8 +9,29 @@
 <h1>Vim Keys Game</h1>
 
 <div class="game-info">
-    <p>Player Position: <strong>(@playerRow, @playerCol)</strong></p>
+    <p>Game State: <strong>@game.State</strong></p>
+    <p>Player Position: <strong>(@game.Player.Position.X, @game.Player.Position.Y)</strong></p>
+    <p>Remaining Droppables: <strong>@game.RemainingDroppables</strong></p>
+    @if (game.Score.HasValue)
+    {
+        <p>Score: <strong>@game.Score.Value.ToString("F2")s</strong></p>
+    }
     <p>Use vim keys: <strong>h</strong>=left, <strong>j</strong>=down, <strong>k</strong>=up, <strong>l</strong>=right</p>
+</div>
+
+<div class="game-controls">
+    @if (game.State == GameState.NotStarted || game.State == GameState.Completed)
+    {
+        <button @onclick="InitializeGame">Initialize Game</button>
+    }
+    @if (game.State == GameState.Ready)
+    {
+        <button @onclick="StartGame">Start Game</button>
+    }
+    @if (game.State == GameState.Playing || game.State == GameState.Completed)
+    {
+        <button @onclick="ResetGame">Reset Game</button>
+    }
 </div>
 
 <DynamicComponent Type="@gridComponentType"
@@ -18,15 +41,11 @@
     // GAME MAKER DECIDES: Change to typeof(GridV1) for anchor-based rendering
     private Type gridComponentType = typeof(GridV2);
 
-    private int gridSize = 5;
-    private int playerRow = 0;
-    private int playerCol = 0;
+    private Game game = new Game();
 
     private Dictionary<string, object> gridParameters => new()
     {
-        { "GridSize", gridSize },
-        { "PlayerRow", playerRow },
-        { "PlayerCol", playerCol }
+        { "Game", game }
     };
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -37,28 +56,59 @@
         }
     }
 
+    private void InitializeGame()
+    {
+        // Define droppable positions for 10x10 grid
+        var droppablePositions = new List<Position>
+        {
+            new Position(2, 1),
+            new Position(1, 2),
+            new Position(3, 2),
+            new Position(2, 3),
+            new Position(4, 4),
+            new Position(7, 6),
+            new Position(5, 8),
+            new Position(8, 3),
+            new Position(9, 9)
+        };
+
+        game.Initialize(droppablePositions);
+        StateHasChanged();
+    }
+
+    private void StartGame()
+    {
+        game.Start();
+        StateHasChanged();
+    }
+
+    private void ResetGame()
+    {
+        game.Reset();
+        StateHasChanged();
+    }
+
     [JSInvokable]
     public void HandleKeyPress(string key)
     {
-        switch (key)
+        if (game.State != GameState.Playing)
         {
-            case "h": // left
-                if (playerCol > 0)
-                    playerCol--;
-                break;
-            case "j": // down
-                if (playerRow < gridSize - 1)
-                    playerRow++;
-                break;
-            case "k": // up
-                if (playerRow > 0)
-                    playerRow--;
-                break;
-            case "l": // right
-                if (playerCol < gridSize - 1)
-                    playerCol++;
-                break;
+            return;
         }
-        StateHasChanged();
+
+        Direction? direction = key switch
+        {
+            "h" => Direction.Left,
+            "j" => Direction.Down,
+            "k" => Direction.Up,
+            "l" => Direction.Right,
+            _ => null
+        };
+
+        if (direction.HasValue)
+        {
+            game.MovePlayer(direction.Value);
+            StateHasChanged();
+        }
     }
 }

@@ -1,10 +1,12 @@
 @* GridV2 - CSS Grid with class-based player highlighting (poc-v2 style) *@
+@using p07_vimkeys_game.Domain.Entities
+@using p07_vimkeys_game.Domain.ValueObjects
 
 <style>
   #grid {
     display: grid;
-    grid-template-columns: repeat(@GridSize, 60px);
-    grid-template-rows: repeat(@GridSize, 60px);
+    grid-template-columns: repeat(@Game.GridSize, 60px);
+    grid-template-rows: repeat(@Game.GridSize, 60px);
     gap: 2px;
   }
   .cell {
@@ -17,23 +19,36 @@
   .player {
     background-color: yellow;
   }
+  .droppable::after {
+    content: '●';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-size: 10px;
+    color: #0066cc;
+  }
 </style>
 
 <div id="grid">
-  @for (int row = 0; row < GridSize; row++)
+  @for (int y = 0; y < Game.GridSize; y++)
   {
-    @for (int col = 0; col < GridSize; col++)
+    @for (int x = 0; x < Game.GridSize; x++)
     {
-      var isPlayer = (row == PlayerRow && col == PlayerCol);
-      <div class="cell @(isPlayer ? "player" : "")" data-row="@row" data-col="@col">
-        @row@col
+      var currentPos = new Position(x, y);
+      var isPlayer = Game.Player.Position == currentPos;
+      var hasDroppable = Game.Droppables.Any(d => !d.IsCollected && d.Position == currentPos);
+
+      var classes = "cell";
+      if (isPlayer) classes += " player";
+      if (hasDroppable) classes += " droppable";
+
+      <div class="@classes" data-row="@y" data-col="@x">
+        @y@x
       </div>
     }
   }
 </div>
 
 @code {
-    [Parameter] public int GridSize { get; set; } = 5;
-    [Parameter] public int PlayerRow { get; set; }
-    [Parameter] public int PlayerCol { get; set; }
+    [Parameter] public Game Game { get; set; } = null!;
 }

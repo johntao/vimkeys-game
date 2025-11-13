@@ -1,4 +1,6 @@
 @* GridV1 - Anchor-based grid with focus highlighting (poc-v1 style) *@
+@using p07_vimkeys_game.Domain.Entities
+@using p07_vimkeys_game.Domain.ValueObjects
 
 <style>
   #grid div {
@@ -13,22 +15,37 @@
     justify-content: center;
     text-decoration: none;
     color: black;
+    position: relative;
   }
   #grid a:focus {
     background-color: yellow;
     outline: 2px solid blue;
     outline-offset: -2px;
   }
+  .droppable::after {
+    content: '●';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-size: 10px;
+    color: #0066cc;
+  }
 </style>
 
 <div id="grid">
-  @for (int row = 0; row < GridSize; row++)
+  @for (int y = 0; y < Game.GridSize; y++)
   {
     <div>
-      @for (int col = 0; col < GridSize; col++)
+      @for (int x = 0; x < Game.GridSize; x++)
       {
-        <a href="javascript:void(0)" data-row="@row" data-col="@col">
-          @row@col
+        var currentPos = new Position(x, y);
+        var hasDroppable = Game.Droppables.Any(d => !d.IsCollected && d.Position == currentPos);
+
+        <a href="javascript:void(0)"
+           class="@(hasDroppable ? "droppable" : "")"
+           data-row="@y"
+           data-col="@x">
+          @y@x
         </a>
       }
     </div>
@@ -36,7 +53,5 @@
 </div>
 
 @code {
-    [Parameter] public int GridSize { get; set; } = 5;
-    [Parameter] public int PlayerRow { get; set; }
-    [Parameter] public int PlayerCol { get; set; }
+    [Parameter] public Game Game { get; set; } = null!;
 }
