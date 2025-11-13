@@ -28,17 +28,20 @@
   <body>
     <div id="grid"></div>
 
+    <script src="lib/grid-state.js"></script>
+    <script src="lib/vim-navigation.js"></script>
     <script>
-      // Create 5x5 grid
+      // Initialize grid state
+      const gridState = new GridState(5);
       const grid = document.getElementById('grid');
-      const size = 5;
       const cells = [];
 
-      for (let row = 0; row < size; row++) {
+      // Create 5x5 grid
+      for (let row = 0; row < gridState.size; row++) {
         const rowDiv = document.createElement('div');
         const rowCells = [];
 
-        for (let col = 0; col < size; col++) {
+        for (let col = 0; col < gridState.size; col++) {
           const anchor = document.createElement('a');
           anchor.href = 'javascript:void(0)';
           anchor.textContent = `${row}${col}`;
@@ -52,41 +55,15 @@
         cells.push(rowCells);
       }
 
-      // Start at position (0,0)
-      let currentRow = 0;
-      let currentCol = 0;
-      cells[currentRow][currentCol].focus();
+      // Focus initial position
+      const pos = gridState.getPosition();
+      cells[pos.row][pos.col].focus();
 
-      // Handle vim keys navigation
-      document.addEventListener('keydown', (e) => {
-        let newRow = currentRow;
-        let newCol = currentCol;
-
-        switch(e.key.toLowerCase()) {
-          case 'h': // left
-            newCol = Math.max(0, currentCol - 1);
-            break;
-          case 'j': // down
-            newRow = Math.min(size - 1, currentRow + 1);
-            break;
-          case 'k': // up
-            newRow = Math.max(0, currentRow - 1);
-            break;
-          case 'l': // right
-            newCol = Math.min(size - 1, currentCol + 1);
-            break;
-          default:
-            return; // Don't prevent default for other keys
-        }
-
-        // Update position if changed
-        if (newRow !== currentRow || newCol !== currentCol) {
-          currentRow = newRow;
-          currentCol = newCol;
-          cells[currentRow][currentCol].focus();
-          e.preventDefault(); // Prevent default only for hjkl keys
-        }
+      // Setup vim navigation
+      const navigation = new VimNavigation(gridState, (position) => {
+        cells[position.row][position.col].focus();
       });
+      navigation.enable();
     </script>
   </body>
 </html>

@@ -13,24 +13,25 @@
   <body>
     <canvas id="grid" width="300" height="300"></canvas>
 
+    <script src="lib/grid-state.js"></script>
+    <script src="lib/vim-navigation.js"></script>
     <script>
+      // Initialize grid state and canvas
+      const gridState = new GridState(5);
       const canvas = document.getElementById('grid');
       const ctx = canvas.getContext('2d');
-      const size = 5;
-      const cellSize = canvas.width / size;
-
-      // Player position
-      let currentRow = 0;
-      let currentCol = 0;
+      const cellSize = canvas.width / gridState.size;
 
       // Draw the grid
       function drawGrid() {
+        const position = gridState.getPosition();
+
         // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // Draw cells
-        for (let row = 0; row < size; row++) {
-          for (let col = 0; col < size; col++) {
+        for (let row = 0; row < gridState.size; row++) {
+          for (let col = 0; col < gridState.size; col++) {
             const x = col * cellSize;
             const y = row * cellSize;
 
@@ -48,8 +49,8 @@
         }
 
         // Draw player
-        const playerX = currentCol * cellSize;
-        const playerY = currentRow * cellSize;
+        const playerX = position.col * cellSize;
+        const playerY = position.row * cellSize;
 
         ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
         ctx.fillRect(playerX, playerY, cellSize, cellSize);
@@ -62,42 +63,17 @@
 
         // Redraw player cell label
         ctx.fillStyle = 'black';
-        ctx.fillText(`${currentRow}${currentCol}`, playerX + cellSize / 2, playerY + cellSize / 2);
+        ctx.fillText(`${position.row}${position.col}`, playerX + cellSize / 2, playerY + cellSize / 2);
       }
 
       // Initial draw
       drawGrid();
 
-      // Handle vim keys navigation
-      document.addEventListener('keydown', (e) => {
-        let newRow = currentRow;
-        let newCol = currentCol;
-
-        switch(e.key.toLowerCase()) {
-          case 'h': // left
-            newCol = Math.max(0, currentCol - 1);
-            break;
-          case 'j': // down
-            newRow = Math.min(size - 1, currentRow + 1);
-            break;
-          case 'k': // up
-            newRow = Math.max(0, currentRow - 1);
-            break;
-          case 'l': // right
-            newCol = Math.min(size - 1, currentCol + 1);
-            break;
-          default:
-            return;
-        }
-
-        // Update position if changed
-        if (newRow !== currentRow || newCol !== currentCol) {
-          currentRow = newRow;
-          currentCol = newCol;
-          drawGrid();
-          e.preventDefault();
-        }
+      // Setup vim navigation
+      const navigation = new VimNavigation(gridState, () => {
+        drawGrid();
       });
+      navigation.enable();
     </script>
   </body>
 </html>

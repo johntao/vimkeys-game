@@ -25,15 +25,18 @@
   <body>
     <div id="grid"></div>
 
+    <script src="lib/grid-state.js"></script>
+    <script src="lib/vim-navigation.js"></script>
     <script>
+      // Initialize grid state
+      const gridState = new GridState(5);
       const grid = document.getElementById('grid');
-      const size = 5;
       const cells = [];
 
       // Create 5x5 grid using div cells
-      for (let row = 0; row < size; row++) {
+      for (let row = 0; row < gridState.size; row++) {
         const rowCells = [];
-        for (let col = 0; col < size; col++) {
+        for (let col = 0; col < gridState.size; col++) {
           const cell = document.createElement('div');
           cell.className = 'cell';
           cell.textContent = `${row}${col}`;
@@ -45,48 +48,25 @@
         cells.push(rowCells);
       }
 
-      // Start at position (0,0)
-      let currentRow = 0;
-      let currentCol = 0;
-      cells[currentRow][currentCol].classList.add('player');
+      // Mark initial player position
+      const initialPos = gridState.getPosition();
+      cells[initialPos.row][initialPos.col].classList.add('player');
 
-      // Handle vim keys navigation
-      document.addEventListener('keydown', (e) => {
-        let newRow = currentRow;
-        let newCol = currentCol;
+      // Setup vim navigation
+      const navigation = new VimNavigation(gridState, (position, direction, oldPosition) => {
+        // Get old position before move
+        const oldPos = {
+          row: position.row + (direction === 'up' ? 1 : direction === 'down' ? -1 : 0),
+          col: position.col + (direction === 'left' ? 1 : direction === 'right' ? -1 : 0)
+        };
 
-        switch(e.key.toLowerCase()) {
-          case 'h': // left
-            newCol = Math.max(0, currentCol - 1);
-            break;
-          case 'j': // down
-            newRow = Math.min(size - 1, currentRow + 1);
-            break;
-          case 'k': // up
-            newRow = Math.max(0, currentRow - 1);
-            break;
-          case 'l': // right
-            newCol = Math.min(size - 1, currentCol + 1);
-            break;
-          default:
-            return;
-        }
+        // Remove player from old position
+        cells[oldPos.row][oldPos.col].classList.remove('player');
 
-        // Update position if changed
-        if (newRow !== currentRow || newCol !== currentCol) {
-          // Remove player from old position
-          cells[currentRow][currentCol].classList.remove('player');
-
-          // Update position
-          currentRow = newRow;
-          currentCol = newCol;
-
-          // Add player to new position
-          cells[currentRow][currentCol].classList.add('player');
-
-          e.preventDefault();
-        }
+        // Add player to new position
+        cells[position.row][position.col].classList.add('player');
       });
+      navigation.enable();
     </script>
   </body>
 </html>
