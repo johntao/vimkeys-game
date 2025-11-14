@@ -91,11 +91,6 @@
     [JSInvokable]
     public void HandleKeyPress(string key)
     {
-        if (game.State != GameState.Playing)
-        {
-            return;
-        }
-
         Direction? direction = key switch
         {
             "h" => Direction.Left,

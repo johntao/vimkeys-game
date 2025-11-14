@@ -70,11 +70,6 @@ public class Game
     /// </summary>
     public bool MovePlayer(Direction direction)
     {
-        if (State != GameState.Playing)
-        {
-            return false;
-        }
-
         // Attempt to move the player
         bool moved = Player.TryMove(direction);
 
@@ -83,13 +78,16 @@ public class Game
             return false; // Player hit the boundary
         }
 
-        // Check if player collected a droppable
-        CheckDroppableCollection();
-
-        // Check if all droppables are collected
-        if (RemainingDroppables == 0)
+        if (State == GameState.Playing)
         {
-            CompleteGame();
+            // Check if player collected a droppable
+            CheckDroppableCollection();
+
+            // Check if all droppables are collected
+            if (RemainingDroppables == 0)
+            {
+                CompleteGame();
+            }
         }
 
         return true;
