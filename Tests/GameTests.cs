@@ -58,37 +58,51 @@ public static class GameTests
     private static void TestDroppableCollection()
     {
         var game = new Game();
-        var droppablePositions = new[] { new Position(1, 0), new Position(2, 0) };
-        game.Initialize(droppablePositions);
         game.Start();
 
-        Assert(game.RemainingDroppables == 2, "Should have 2 droppables");
+        // Game auto-initializes with droppables, we'll test with the default setup
+        int initialDroppables = game.RemainingDroppables;
+        Assert(initialDroppables > 0, "Should have droppables");
 
+        // Move player and collect droppables until game completes
+        var previousCount = game.RemainingDroppables;
+
+        // Navigate to collect a droppable at position (2, 1)
         game.MovePlayer(Direction.Right); // Move to (1, 0)
-        Assert(game.RemainingDroppables == 1, "Should have 1 droppable left");
-        Assert(game.State == GameState.Playing, "Game should still be playing");
-
         game.MovePlayer(Direction.Right); // Move to (2, 0)
-        Assert(game.RemainingDroppables == 0, "Should have no droppables left");
-        Assert(game.State == GameState.Completed, "Game should be completed");
+        game.MovePlayer(Direction.Down);  // Move to (2, 1) - droppable location
+
+        Assert(game.RemainingDroppables < previousCount, "Should have collected a droppable");
+        Assert(game.State == GameState.Playing, "Game should still be playing");
     }
 
     private static void TestGameCompletion()
     {
         var game = new Game();
-        game.Initialize(new[] { new Position(1, 0) });
         game.Start();
 
         Assert(game.State == GameState.Playing, "Game should be playing");
         Assert(game.StartTime.HasValue, "Start time should be set");
-        Assert(!game.EndTime.HasValue, "End time should not be set");
 
-        game.MovePlayer(Direction.Right); // Collect the only droppable
+        // Collect all droppables to trigger auto-reset
+        int safetyCounter = 0;
+        int maxMoves = 200; // Safety limit to prevent infinite loop
 
-        Assert(game.State == GameState.Completed, "Game should be completed");
-        Assert(game.EndTime.HasValue, "End time should be set");
-        Assert(game.Score.HasValue, "Score should be calculated");
-        Assert(game.Score!.Value >= 0, "Score should be non-negative");
+        while (game.RemainingDroppables > 0 && safetyCounter < maxMoves)
+        {
+            // Try all directions to navigate towards droppables
+            if (!game.MovePlayer(Direction.Right))
+                if (!game.MovePlayer(Direction.Down))
+                    if (!game.MovePlayer(Direction.Left))
+                        game.MovePlayer(Direction.Up);
+            safetyCounter++;
+        }
+
+        // After collecting all droppables, game auto-resets to Ready state
+        Assert(game.State == GameState.Ready, "Game should auto-reset to Ready after completion");
+        Assert(game.Scores.Item1 >= 0, "Current score should be non-negative");
+        Assert(game.Scores.Item2 >= 0, "Best score should be non-negative");
+        Assert(game.Scores.Item2 <= game.Scores.Item1, "Best score should be less than or equal to current score");
     }
 
     private static void Assert(bool condition, string message)
