@@ -20,10 +20,6 @@
 </div>
 
 <div class="game-controls">
-    @if (game.State == GameState.NotStarted || game.State == GameState.Completed)
-    {
-        <button @onclick="InitializeGame">Initialize Game</button>
-    }
     @if (game.State == GameState.Ready)
     {
         <button @onclick="StartGame">Start Game</button>
@@ -54,26 +50,6 @@
         {
             await JSRuntime.InvokeVoidAsync("registerKeyHandler", DotNetObjectReference.Create(this));
         }
-    }
-
-    private void InitializeGame()
-    {
-        // Define droppable positions for 10x10 grid
-        var droppablePositions = new List<Position>
-        {
-            new Position(2, 1),
-            new Position(1, 2),
-            new Position(3, 2),
-            new Position(2, 3),
-            new Position(4, 4),
-            new Position(7, 6),
-            new Position(5, 8),
-            new Position(8, 3),
-            new Position(9, 9)
-        };
-
-        game.Initialize(droppablePositions);
-        StateHasChanged();
     }
 
     private void StartGame()

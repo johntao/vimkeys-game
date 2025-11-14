@@ -32,19 +32,20 @@ public class Game
     public Game()
     {
         Player = new Player(new Position(0, 0)); // Start at top-left
-        Droppables = new List<Droppable>();
-        State = GameState.NotStarted;
-    }
 
-    /// <summary>
-    /// Initializes the game with droppables at specified positions
-    /// </summary>
-    public void Initialize(IEnumerable<Position> droppablePositions)
-    {
-        if (State != GameState.NotStarted)
+        // Auto-initialize with default droppable positions
+        var droppablePositions = new List<Position>
         {
-            throw new InvalidOperationException("Game has already been initialized");
-        }
+            new Position(2, 1),
+            new Position(1, 2),
+            new Position(3, 2),
+            new Position(2, 3),
+            new Position(4, 4),
+            new Position(7, 6),
+            new Position(5, 8),
+            new Position(8, 3),
+            new Position(9, 9)
+        };
 
         Droppables = droppablePositions.Select(pos => new Droppable(pos)).ToList();
         State = GameState.Ready;
@@ -57,7 +58,7 @@ public class Game
     {
         if (State != GameState.Ready)
         {
-            throw new InvalidOperationException("Game must be in Ready state to start");
+            return; // Silently ignore if not in Ready state
         }
 
         StartTime = DateTime.UtcNow;
@@ -114,15 +115,30 @@ public class Game
     }
 
     /// <summary>
-    /// Resets the game to initial state
+    /// Resets the game to Ready state with fresh droppables
     /// </summary>
     public void Reset()
     {
         Player = new Player(new Position(0, 0));
-        Droppables.Clear();
+
+        // Reset droppables to initial positions
+        var droppablePositions = new List<Position>
+        {
+            new Position(2, 1),
+            new Position(1, 2),
+            new Position(3, 2),
+            new Position(2, 3),
+            new Position(4, 4),
+            new Position(7, 6),
+            new Position(5, 8),
+            new Position(8, 3),
+            new Position(9, 9)
+        };
+
+        Droppables = droppablePositions.Select(pos => new Droppable(pos)).ToList();
         StartTime = null;
         EndTime = null;
-        State = GameState.NotStarted;
+        State = GameState.Ready;
     }
 }
 
@@ -131,7 +147,6 @@ public class Game
 /// </summary>
 public enum GameState
 {
-    NotStarted,
     Ready,
     Playing,
     Completed
