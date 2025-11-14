@@ -6,28 +6,34 @@
 
 <PageTitle>Vim Keys Game</PageTitle>
 
-<h1>Vim Keys Game</h1>
+<style>
+  .top-info>button {
+    margin-inline: 2px;
+  }
+  .top-info {
+    font-family: monospace;
+    max-width: fit-content;
+    margin-inline: auto;
+  }
+  button>h1 {
+    margin-block: 1px;
+    font-family: monospace;
+  }
+  .top-info>h1 {
+    display: inline-block
+  }
+</style>
 
-<div class="game-info">
-    <p>Game State: <strong>@game.State</strong></p>
-    <p>Player Position: <strong>(@game.Player.Position.X, @game.Player.Position.Y)</strong></p>
-    <p>Remaining Droppables: <strong>@game.RemainingDroppables</strong></p>
-    @if (game.Score.HasValue)
-    {
-        <p>Score: <strong>@game.Score.Value.ToString("F2")s</strong></p>
-    }
-    <p>Use vim keys: <strong>h</strong>=left, <strong>j</strong>=down, <strong>k</strong>=up, <strong>l</strong>=right</p>
-</div>
-
-<div class="game-controls">
-    @if (game.State == GameState.Ready)
-    {
-        <button @onclick="StartGame">Start Game</button>
-    }
-    @if (game.State == GameState.Playing || game.State == GameState.Completed)
-    {
-        <button @onclick="ResetGame">Reset Game</button>
-    }
+<div class="top-info">
+<button><h1>&lt;SPACE&gt;@(game.State == GameState.Ready ? "Start" : "Stop")</h1></button>
+<button><h1>h⬅</h1></button>
+<button><h1>j⬇</h1></button>
+<button><h1>k⬆</h1></button>
+<button><h1>l➡</h1></button>
+<h1>
+| Score: @game.Scores.Item1.ToString("F2")s |
+Best: @game.Scores.Item2.ToString("F2")s
+</h1>
 </div>
 
 <DynamicComponent Type="@gridComponentType"
@@ -80,6 +86,19 @@
         {
             game.MovePlayer(direction.Value);
             StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public void HandleSpacePress()
+    {
+        if (game.State == GameState.Ready)
+        {
+            StartGame();
+        }
+        else if (game.State == GameState.Playing)
+        {
+            ResetGame();
         }
     }
 }

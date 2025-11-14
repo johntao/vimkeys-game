@@ -15,14 +15,8 @@ public class Game
     public GameState State { get; private set; }
     public DateTime? StartTime { get; private set; }
     public DateTime? EndTime { get; private set; }
+    public (double, double) Scores { get; private set; }
 
-    /// <summary>
-    /// Gets the elapsed time in seconds (score)
-    /// Returns null if game hasn't started or ended
-    /// </summary>
-    public double? Score => StartTime.HasValue && EndTime.HasValue
-        ? (EndTime.Value - StartTime.Value).TotalSeconds
-        : null;
 
     /// <summary>
     /// Gets the count of remaining droppables
@@ -32,6 +26,7 @@ public class Game
     public Game()
     {
         Player = new Player(new Position(0, 0)); // Start at top-left
+        Scores = (999, 999);
 
         // Auto-initialize with default droppable positions
         var droppablePositions = new List<Position>
@@ -106,21 +101,31 @@ public class Game
     }
 
     /// <summary>
-    /// Completes the game and stops the timer
+    /// Completes the game, stops the timer, and auto-resets for next round
     /// </summary>
     private void CompleteGame()
     {
-        EndTime = DateTime.UtcNow;
-        State = GameState.Completed;
+        if (!StartTime.HasValue || !EndTime.HasValue)
+        {
+            EndTime = DateTime.UtcNow;
+        }
+
+        var score = (EndTime!.Value - StartTime!.Value).TotalSeconds;
+
+        // Update Scores tuple - assign new tuple with updated values
+        var newBest = score < Scores.Item2 ? score : Scores.Item2;
+        Scores = (score, newBest);
+
+        // Auto-reset for next round
+        Reset();
     }
 
     /// <summary>
     /// Resets the game to Ready state with fresh droppables
+    /// Preserves player position
     /// </summary>
     public void Reset()
     {
-        Player = new Player(new Position(0, 0));
-
         // Reset droppables to initial positions
         var droppablePositions = new List<Position>
         {
@@ -148,6 +153,5 @@ public class Game
 public enum GameState
 {
     Ready,
-    Playing,
-    Completed
+    Playing
 }
