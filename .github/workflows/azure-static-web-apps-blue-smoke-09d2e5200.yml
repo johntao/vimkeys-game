@@ -32,6 +32,10 @@ jobs:
                const coredemo = require('@actions/core')
                return await coredemo.getIDToken()
            result-encoding: string
+      - name: Setup .NET 9.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -46,6 +50,25 @@ jobs:
           app_build_command: "dotnet publish -c Release -o published"
           github_id_token: ${{ steps.idtoken.outputs.result }}
           ###### End of Repository/Build Configurations ######
+      - name: Verify fingerprint replacement
+        run: |
+          echo "=== Checking published index.html for fingerprint replacement ==="
+          if [ -f "published/wwwroot/index.html" ]; then
+            echo "✓ Published index.html found"
+            echo ""
+            echo "Blazor script tag:"
+            grep -n "blazor.webassembly" published/wwwroot/index.html || echo "ERROR: blazor.webassembly script tag not found!"
+            echo ""
+            if grep -q "#\[\.{fingerprint}\]" published/wwwroot/index.html; then
+              echo "⚠️  WARNING: Fingerprint placeholder NOT replaced!"
+            else
+              echo "✓ Fingerprint appears to be replaced"
+            fi
+          else
+            echo "❌ ERROR: published/wwwroot/index.html not found!"
+            echo "Directory structure:"
+            ls -la published/ 2>/dev/null || echo "published/ directory doesn't exist"
+          fi
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
