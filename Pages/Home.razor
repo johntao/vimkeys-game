@@ -6,69 +6,6 @@
 
 <PageTitle>Vim Keys Game</PageTitle>
 
-<style>
-  .top-info>button {
-    margin-inline: 2px;
-  }
-  .top-info {
-    font-family: monospace;
-    max-width: fit-content;
-    margin-inline: auto;
-  }
-  button>h1 {
-    margin-block: 1px;
-    font-family: monospace;
-  }
-  .top-info>h1 {
-    display: inline-block
-  }
-
-  dialog {
-    font-family: monospace;
-    padding: 20px;
-    border: 2px solid #333;
-    border-radius: 4px;
-  }
-
-  dialog::backdrop {
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: 80px 60px 60px;
-    gap: 10px;
-    margin-bottom: 10px;
-    align-items: center;
-  }
-
-  .form-row label {
-    text-align: left;
-  }
-
-  .system-key {
-    text-align: center;
-    padding: 5px;
-    background-color: #f0f0f0;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-    font-weight: bold;
-  }
-
-  .form-row input {
-    padding: 5px;
-    font-family: monospace;
-    text-align: center;
-    border: 1px solid #999;
-    border-radius: 3px;
-  }
-
-  .form-row input:focus {
-    outline: none;
-    border-color: #007bff;
-  }
-</style>
-
 <div class="top-info">
 <button onclick="configDialog.showModal()"><h1>Config Keys</h1></button>
 <h1>
