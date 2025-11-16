@@ -6,6 +6,7 @@ namespace p07_vimkeys_game.Domain.ValueObjects;
 /// </summary>
 public enum Direction
 {
+    None,
     Up,
     Down,
     Left,

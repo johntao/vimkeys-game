@@ -22,19 +22,92 @@
   .top-info>h1 {
     display: inline-block
   }
+
+  dialog {
+    font-family: monospace;
+    padding: 20px;
+    border: 2px solid #333;
+    border-radius: 4px;
+  }
+
+  dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 80px 60px 60px;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+  }
+
+  .form-row label {
+    text-align: left;
+  }
+
+  .system-key {
+    text-align: center;
+    padding: 5px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-weight: bold;
+  }
+
+  .form-row input {
+    padding: 5px;
+    font-family: monospace;
+    text-align: center;
+    border: 1px solid #999;
+    border-radius: 3px;
+  }
+
+  .form-row input:focus {
+    outline: none;
+    border-color: #007bff;
+  }
 </style>
 
 <div class="top-info">
-<button><h1>&lt;SPACE&gt;@(game.State == GameState.Ready ? "Start" : "Stop")</h1></button>
-<button @onclick="() => PromptKey(Direction.Left)"><h1>@keybindings[Direction.Left]⬅</h1></button>
-<button @onclick="() => PromptKey(Direction.Down)"><h1>@keybindings[Direction.Down]⬇</h1></button>
-<button @onclick="() => PromptKey(Direction.Up)"><h1>@keybindings[Direction.Up]⬆</h1></button>
-<button @onclick="() => PromptKey(Direction.Right)"><h1>@keybindings[Direction.Right]➡</h1></button>
+<button onclick="configDialog.showModal()"><h1>Config Keys</h1></button>
 <h1>
+Keys: &lt;SPACE&gt;@(game.State == GameState.Ready ? "Start" : "Stop")
+@GetEffectiveKey(Direction.Left)⬅
+@GetEffectiveKey(Direction.Down)⬇
+@GetEffectiveKey(Direction.Up)⬆
+@GetEffectiveKey(Direction.Right)➡
 | Score: @game.Scores.Item1.ToString("F2")s |
 Best: @game.Scores.Item2.ToString("F2")s
 </h1>
 </div>
+
+<dialog id="configDialog" @ref="configDialog" closedby="any">
+  <h2>Configure Keybindings</h2>
+  <form id="keybindingForm" method="dialog">
+    <div class="form-row">
+      <label>Left ⬅</label>
+      <span class="system-key">@systemKeybindings[Direction.Left]</span>
+      <input type="text" name="left" maxlength="1" value="@userKeybindings[Direction.Left]" />
+    </div>
+    <div class="form-row">
+      <label>Down ⬇</label>
+      <span class="system-key">@systemKeybindings[Direction.Down]</span>
+      <input type="text" name="down" maxlength="1" value="@userKeybindings[Direction.Down]" />
+    </div>
+    <div class="form-row">
+      <label>Up ⬆</label>
+      <span class="system-key">@systemKeybindings[Direction.Up]</span>
+      <input type="text" name="up" maxlength="1" value="@userKeybindings[Direction.Up]" />
+    </div>
+    <div class="form-row">
+      <label>Right ➡</label>
+      <span class="system-key">@systemKeybindings[Direction.Right]</span>
+      <input type="text" name="right" maxlength="1" value="@userKeybindings[Direction.Right]" />
+    </div>
+    <button style="display:none">Submit</button>
+  </form>
+</dialog>
 
 <DynamicComponent Type="@gridComponentType"
                   Parameters="@gridParameters" />
@@ -45,14 +118,33 @@ Best: @game.Scores.Item2.ToString("F2")s
 
     private Game game = new Game();
 
-    // Configurable keybindings
-    private Dictionary<Direction, string> keybindings = new()
+    // System default keybindings
+    private Dictionary<Direction, string> systemKeybindings = new()
     {
         { Direction.Left, "h" },
         { Direction.Down, "j" },
         { Direction.Up, "k" },
         { Direction.Right, "l" }
     };
+
+    // User-defined keybindings (overrides system defaults)
+    private Dictionary<Direction, string> userKeybindings = new()
+    {
+        { Direction.Left, "" },
+        { Direction.Down, "" },
+        { Direction.Up, "" },
+        { Direction.Right, "" }
+    };
+
+    // Reference to the dialog element
+    private ElementReference configDialog;
+
+    // Get effective keybinding (user override or system default)
+    private string GetEffectiveKey(Direction direction)
+    {
+        var userKey = userKeybindings[direction];
+        return string.IsNullOrEmpty(userKey) ? systemKeybindings[direction] : userKey;
+    }
 
     private Dictionary<string, object> gridParameters => new()
     {
@@ -64,19 +156,31 @@ Best: @game.Scores.Item2.ToString("F2")s
         if (firstRender)
         {
             await JSRuntime.InvokeVoidAsync("registerKeyHandler", DotNetObjectReference.Create(this));
+            await JSRuntime.InvokeVoidAsync("registerDialogCloseHandler", configDialog, DotNetObjectReference.Create(this));
         }
     }
 
-    private async Task PromptKey(Direction direction)
+    [JSInvokable]
+    public void OnDialogClose(string left, string down, string up, string right)
     {
-        var directionName = direction.ToString().ToUpper();
-        var currentKey = keybindings[direction];
-        var newKey = await JSRuntime.InvokeAsync<string>("promptForKey", directionName, currentKey);
-        if (!string.IsNullOrEmpty(newKey))
+        // Validate no duplicates
+        var values = new[] { left, down, up, right }
+            .Where(v => !string.IsNullOrEmpty(v))
+            .ToList();
+
+        if (values.Count != values.Distinct().Count())
         {
-            keybindings[direction] = newKey;
-            StateHasChanged();
+            // Has duplicates - could show error, for now just ignore
+            return;
         }
+
+        // Update user keybindings
+        userKeybindings[Direction.Left] = left ?? "";
+        userKeybindings[Direction.Down] = down ?? "";
+        userKeybindings[Direction.Up] = up ?? "";
+        userKeybindings[Direction.Right] = right ?? "";
+
+        StateHasChanged();
     }
 
     private void StartGame()
@@ -96,11 +200,13 @@ Best: @game.Scores.Item2.ToString("F2")s
     {
         // Centralized keyboard shortcut dispatch logic
 
-        // Handle configurable navigation keys
-        if (keybindings.ContainsValue(key))
+        // Handle configurable navigation keys - check effective keys
+        var matchingDirection = new[] { Direction.Left, Direction.Down, Direction.Up, Direction.Right }
+            .FirstOrDefault(d => GetEffectiveKey(d) == key);
+
+        if (matchingDirection != default(Direction))
         {
-            var direction = keybindings.First(kvp => kvp.Value == key).Key;
-            game.MovePlayer(direction);
+            game.MovePlayer(matchingDirection);
             StateHasChanged();
         }
         // Handle space key for Start/Reset game
