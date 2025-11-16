@@ -24,3 +24,9 @@ window.unregisterKeyHandler = () => {
     document.removeEventListener('keydown', handleKeyDown);
     dotNetHelper = null;
 };
+
+// Prompt for keybinding
+window.promptForKey = (direction, currentKey) => {
+    const result = window.prompt(`Enter new key for ${direction} (currently: ${currentKey}):`, currentKey);
+    return result && result.length > 0 ? result[0] : null; // Return first character only, or null if cancelled
+};

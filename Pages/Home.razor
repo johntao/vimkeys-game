@@ -26,10 +26,10 @@
 
 <div class="top-info">
 <button><h1>&lt;SPACE&gt;@(game.State == GameState.Ready ? "Start" : "Stop")</h1></button>
-<button><h1>h⬅</h1></button>
-<button><h1>j⬇</h1></button>
-<button><h1>k⬆</h1></button>
-<button><h1>l➡</h1></button>
+<button @onclick="() => PromptKey(Direction.Left)"><h1>@keybindings[Direction.Left]⬅</h1></button>
+<button @onclick="() => PromptKey(Direction.Down)"><h1>@keybindings[Direction.Down]⬇</h1></button>
+<button @onclick="() => PromptKey(Direction.Up)"><h1>@keybindings[Direction.Up]⬆</h1></button>
+<button @onclick="() => PromptKey(Direction.Right)"><h1>@keybindings[Direction.Right]➡</h1></button>
 <h1>
 | Score: @game.Scores.Item1.ToString("F2")s |
 Best: @game.Scores.Item2.ToString("F2")s
@@ -45,6 +45,15 @@ Best: @game.Scores.Item2.ToString("F2")s
 
     private Game game = new Game();
 
+    // Configurable keybindings
+    private Dictionary<Direction, string> keybindings = new()
+    {
+        { Direction.Left, "h" },
+        { Direction.Down, "j" },
+        { Direction.Up, "k" },
+        { Direction.Right, "l" }
+    };
+
     private Dictionary<string, object> gridParameters => new()
     {
         { "Game", game }
@@ -55,6 +64,18 @@ Best: @game.Scores.Item2.ToString("F2")s
         if (firstRender)
         {
             await JSRuntime.InvokeVoidAsync("registerKeyHandler", DotNetObjectReference.Create(this));
+        }
+    }
+
+    private async Task PromptKey(Direction direction)
+    {
+        var directionName = direction.ToString().ToUpper();
+        var currentKey = keybindings[direction];
+        var newKey = await JSRuntime.InvokeAsync<string>("promptForKey", directionName, currentKey);
+        if (!string.IsNullOrEmpty(newKey))
+        {
+            keybindings[direction] = newKey;
+            StateHasChanged();
         }
     }
 
@@ -75,23 +96,12 @@ Best: @game.Scores.Item2.ToString("F2")s
     {
         // Centralized keyboard shortcut dispatch logic
 
-        // Handle vim navigation keys: h, j, k, l
-        if (key is "h" or "j" or "k" or "l")
+        // Handle configurable navigation keys
+        if (keybindings.ContainsValue(key))
         {
-            Direction? direction = key switch
-            {
-                "h" => Direction.Left,
-                "j" => Direction.Down,
-                "k" => Direction.Up,
-                "l" => Direction.Right,
-                _ => null
-            };
-
-            if (direction.HasValue)
-            {
-                game.MovePlayer(direction.Value);
-                StateHasChanged();
-            }
+            var direction = keybindings.First(kvp => kvp.Value == key).Key;
+            game.MovePlayer(direction);
+            StateHasChanged();
         }
         // Handle space key for Start/Reset game
         else if (key == " ")
