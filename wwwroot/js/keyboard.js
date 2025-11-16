@@ -13,21 +13,9 @@ window.registerKeyHandler = (helper) => {
 };
 
 function handleKeyDown(event) {
-    // Handle vim navigation keys: h, j, k, l
-    if (['h', 'j', 'k', 'l'].includes(event.key)) {
-        event.preventDefault(); // Prevent default browser behavior
-
-        if (dotNetHelper) {
-            dotNetHelper.invokeMethodAsync('HandleKeyPress', event.key);
-        }
-    }
-    // Handle space key for Start/Reset game
-    else if (event.key === ' ') {
-        event.preventDefault(); // Prevent default browser behavior (page scroll)
-
-        if (dotNetHelper) {
-            dotNetHelper.invokeMethodAsync('HandleSpacePress');
-        }
+    if (dotNetHelper) {
+        // Pass all event information to C# for centralized handling
+        dotNetHelper.invokeMethodAsync('HandleKeyDown', event.key, event.ctrlKey, event.shiftKey, event.altKey, event.metaKey);
     }
 }
 

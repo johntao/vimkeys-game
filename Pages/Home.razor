@@ -71,34 +71,39 @@ Best: @game.Scores.Item2.ToString("F2")s
     }
 
     [JSInvokable]
-    public void HandleKeyPress(string key)
+    public void HandleKeyDown(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {
-        Direction? direction = key switch
-        {
-            "h" => Direction.Left,
-            "j" => Direction.Down,
-            "k" => Direction.Up,
-            "l" => Direction.Right,
-            _ => null
-        };
+        // Centralized keyboard shortcut dispatch logic
 
-        if (direction.HasValue)
+        // Handle vim navigation keys: h, j, k, l
+        if (key is "h" or "j" or "k" or "l")
         {
-            game.MovePlayer(direction.Value);
-            StateHasChanged();
-        }
-    }
+            Direction? direction = key switch
+            {
+                "h" => Direction.Left,
+                "j" => Direction.Down,
+                "k" => Direction.Up,
+                "l" => Direction.Right,
+                _ => null
+            };
 
-    [JSInvokable]
-    public void HandleSpacePress()
-    {
-        if (game.State == GameState.Ready)
-        {
-            StartGame();
+            if (direction.HasValue)
+            {
+                game.MovePlayer(direction.Value);
+                StateHasChanged();
+            }
         }
-        else if (game.State == GameState.Playing)
+        // Handle space key for Start/Reset game
+        else if (key == " ")
         {
-            ResetGame();
+            if (game.State == GameState.Ready)
+            {
+                StartGame();
+            }
+            else if (game.State == GameState.Playing)
+            {
+                ResetGame();
+            }
         }
     }
 }
