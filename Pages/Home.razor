@@ -2,7 +2,6 @@
 @using p07_vimkeys_game.Components
 @using p07_vimkeys_game.Domain.Entities
 @using p07_vimkeys_game.Domain.ValueObjects
-@using System.ComponentModel.DataAnnotations
 @inject IJSRuntime JS
 
 <PageTitle>Vim Keys Game</PageTitle>
@@ -11,7 +10,7 @@
 <button onclick="configDialog.showModal()"><h1>Config Keys</h1></button>
 <h1>
 Keys: &lt;SPACE&gt;@(game.State == GameState.Ready ? "Start" : "Stop")
-@string.Join("\n", Qqq.Values.Select(q => $"{q.UserDef}{q.Icon}"))
+@string.Join("\n", Qqq.Values.Select(q => $"{q.CurrentDef}{q.Icon}"))
 | Score: @game.Scores.Item1.ToString("F2")s |
 Best: @game.Scores.Item2.ToString("F2")s
 </h1>
@@ -19,9 +18,7 @@ Best: @game.Scores.Item2.ToString("F2")s
 
 <dialog id="configDialog" @ref="configDialog" @onclose="OnDialogClose" closedby="any">
   <h2>Configure Keybindings</h2>
-  <EditForm Model="formModel" method="dialog" OnValidSubmit="OnValidFormSubmit" OnInvalidSubmit="OnInvalidFormSubmit">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+  <EditForm Model="this" method="dialog" OnValidSubmit="OnValidFormSubmit" OnInvalidSubmit="OnInvalidFormSubmit">
     <div class="form-row">
       <label>Left ⬅</label>
       <span class="system-key">@Qqq[Direction.Left].SystemDef</span>
@@ -55,12 +52,12 @@ Best: @game.Scores.Item2.ToString("F2")s
 
     private Game game = new Game();
 
-  public static readonly Dictionary<Direction, Domain01> Qqq =
+  public static readonly Dictionary<Direction, Domain01> Qqq = new()
   {
-      [Direction.Left] = new() { Key = Direction.Left, Name = "Left", SystemDef = "h", Icon = "⬅" },
-      [Direction.Down] = new() { Key = Direction.Down, Name = "Down", SystemDef = "j", Icon = "⬇" },
-      [Direction.Up] = new() { Key = Direction.Up, Name = "Up", SystemDef = "k", Icon = "⬆" },
-      [Direction.Right] = new() { Key = Direction.Right, Name = "Right", SystemDef = "l", Icon = "➡" },
+      { Direction.Left, new() { Key = Direction.Left, Name = "Left", SystemDef = "h", Icon = "⬅" } },
+      { Direction.Down, new() { Key = Direction.Down, Name = "Down", SystemDef = "j", Icon = "⬇" } },
+      { Direction.Up, new() { Key = Direction.Up, Name = "Up", SystemDef = "k", Icon = "⬆" } },
+      { Direction.Right, new() { Key = Direction.Right, Name = "Right", SystemDef = "l", Icon = "➡" } },
   };
 
     // Reference to the dialog element
@@ -120,9 +117,10 @@ Best: @game.Scores.Item2.ToString("F2")s
         // Centralized keyboard shortcut dispatch logic
 
         // Handle configurable navigation keys - check effective keys
-        var matchingDirection = Qqq.FirstOrDefault(q => q.Value.CurrentDef == key)?.Key ?? Direction.None;
+        var matchingEntry = Qqq.FirstOrDefault(q => q.Value.CurrentDef == key);
+        var matchingDirection = matchingEntry.Key != Direction.None ? matchingEntry.Key : Direction.None;
 
-        if (matchingDirection != default(Direction))
+        if (matchingDirection != Direction.None)
         {
             game.MovePlayer(matchingDirection);
             StateHasChanged();

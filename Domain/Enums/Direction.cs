@@ -15,12 +15,12 @@ public enum Direction
 
 public class Domain01
 {
-  public Direction Key { get; init; }
-  public string SystemDef { get; init; }
-  public string Name { get; init; }
-  public string Icon { get; init; }
+  public required Direction Key { get; init; }
+  public required string SystemDef { get; init; }
+  public required string Name { get; init; }
+  public required string Icon { get; init; }
   public string? UserDef { get; set; } = null;
-  public string CurrentDef => UserDef ?? SystemDef;
+  public string CurrentDef => string.IsNullOrEmpty(UserDef) ? SystemDef : UserDef;
 }
 
 /*
