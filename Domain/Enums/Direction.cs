@@ -7,52 +7,98 @@ namespace p07_vimkeys_game.Domain.ValueObjects;
 public enum Direction
 {
     None,
-    Up,
-    Down,
     Left,
+    Down,
+    Up,
     Right
 }
 
-internal static class EnumHelper
+public class Domain01
 {
-    /// <summary>
-    /// Returns a HashSet of all values for the specified enum type.
-    /// </summary>
-    /// <typeparam name="T">The enum type</typeparam>
-    /// <param name="includeNone">Whether to include the zero value (None). Defaults to false.</param>
-    /// <returns>HashSet of enum values</returns>
-    public static HashSet<T> GetValues<T>(bool includeNone = false) where T : struct, Enum
-    {
-        var values = Enum.GetValues<T>();
-
-        if (includeNone)
-        {
-            return new HashSet<T>(values);
-        }
-
-        // Filter out the zero value (typically "None")
-        return values.Where(v => Convert.ToInt32(v) != 0).ToHashSet();
-    }
-
-    /// <summary>
-    /// Returns a HashSet of all string names for the specified enum type.
-    /// </summary>
-    /// <typeparam name="T">The enum type</typeparam>
-    /// <param name="includeNone">Whether to include the zero value name (None). Defaults to false.</param>
-    /// <returns>HashSet of enum string literals</returns>
-    public static HashSet<string> GetNames<T>(bool includeNone = false) where T : struct, Enum
-    {
-        var names = Enum.GetNames<T>();
-
-        if (includeNone)
-        {
-            return new HashSet<string>(names);
-        }
-
-        // Filter out the name corresponding to zero value
-        var values = Enum.GetValues<T>();
-        return names
-            .Where((name, index) => Convert.ToInt32(values.GetValue(index)!) != 0)
-            .ToHashSet();
-    }
+  public Direction Key { get; init; }
+  public string SystemDef { get; init; }
+  public string Name { get; init; }
+  public string Icon { get; init; }
+  public string? UserDef { get; set; } = null;
+  public string CurrentDef => UserDef ?? SystemDef;
 }
+
+/*
+@GetEffectiveKey(Direction.Left)⬅
+  itr
+  render1: UserIcon
+Left ⬅
+  !itr
+  render2: Name Icon
+@systemKeybindings[Direction.Left]
+  !itr
+  omni[Left].SystemKey
+private static readonly Direction[] AllDirections = { Direction.Left, Direction.Down, Direction.Up, Direction.Right };
+  kill
+  omni.Check
+formModel.Left
+  !itr
+  omni[Left].UserKey
+{ Direction.Left, ("⬅", "Left") },
+  !itr
+  omni.new
+{ Direction.Left, "h" },
+  !itr
+  omni.new
+public string Left { get; set; } = "";
+  kill
+  omni[Left].UserKey
+case Direction.Left: Left = value; break;
+  kill
+var keys = new[] { model.Left, model.Down, model.Up, model.Right }
+  ??
+userKeybindings[direction] = formModel.GetKey(direction) ?? "";
+  kill
+  Direction.Left => Left,
+*/
+
+// internal static class Domain02
+// {
+//   public static readonly Dictionary<Direction, Domain01> Qqq = EnumHelper.Www<Domain01>([
+//       new { SystemDef = "h", Icon = "⬅" },
+//       new { SystemDef = "j", Icon = "⬇" },
+//       new { SystemDef = "k", Icon = "⬆" },
+//       new { SystemDef = "l", Icon = "➡" },
+//   ]);
+//   public static void Eee()
+//   {
+//     var v1 = string.Join("\n", Qqq.Values.Select(q => $"{q.UserDef}{q.Icon}"));
+//     var t1 = Qqq[Direction.Left];
+//     var v2 = $"{t1.Name} {t1.Icon}";
+//     var v3 = t1.SystemDef;
+//
+//
+//   }
+// }
+//
+// internal static class EnumHelper
+// {
+//     /// <summary>
+//     /// Returns a HashSet of all values for the specified enum type.
+//     /// </summary>
+//     /// <typeparam name="T">The enum type</typeparam>
+//     /// <param name="includeNone">Whether to include the zero value (None). Defaults to false.</param>
+//     /// <returns>HashSet of enum values</returns>
+//     public static HashSet<T> GetValues<T>(bool includeNone = false) where T : struct, Enum
+//     {
+//         return Enum.GetValues<T>().Skip(includeNone ? 0 : 1).ToHashSet();
+//     }
+//
+//     /// <summary>
+//     /// Returns a HashSet of all string names for the specified enum type.
+//     /// </summary>
+//     /// <typeparam name="T">The enum type</typeparam>
+//     /// <param name="includeNone">Whether to include the zero value name (None). Defaults to false.</param>
+//     /// <returns>HashSet of enum string literals</returns>
+//     public static HashSet<string> GetNames<T>(bool includeNone = false) where T : struct, Enum
+//     {
+//         return Enum.GetNames<T>()
+//             .Skip(includeNone ? 0 : 1)
+//             .ToHashSet();
+//     }
+// }

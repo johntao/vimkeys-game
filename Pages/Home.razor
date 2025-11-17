@@ -11,10 +11,7 @@
 <button onclick="configDialog.showModal()"><h1>Config Keys</h1></button>
 <h1>
 Keys: &lt;SPACE&gt;@(game.State == GameState.Ready ? "Start" : "Stop")
-@GetEffectiveKey(Direction.Left)⬅
-@GetEffectiveKey(Direction.Down)⬇
-@GetEffectiveKey(Direction.Up)⬆
-@GetEffectiveKey(Direction.Right)➡
+@string.Join("\n", Qqq.Values.Select(q => $"{q.UserDef}{q.Icon}"))
 | Score: @game.Scores.Item1.ToString("F2")s |
 Best: @game.Scores.Item2.ToString("F2")s
 </h1>
@@ -27,23 +24,23 @@ Best: @game.Scores.Item2.ToString("F2")s
     <ValidationSummary />
     <div class="form-row">
       <label>Left ⬅</label>
-      <span class="system-key">@systemKeybindings[Direction.Left]</span>
-      <InputText @bind-Value="formModel.Left" maxlength="1" />
+      <span class="system-key">@Qqq[Direction.Left].SystemDef</span>
+      <InputText @bind-Value="Qqq[Direction.Left].UserDef" maxlength="1" />
     </div>
     <div class="form-row">
       <label>Down ⬇</label>
-      <span class="system-key">@systemKeybindings[Direction.Down]</span>
-      <InputText @bind-Value="formModel.Down" maxlength="1" />
+      <span class="system-key">@Qqq[Direction.Down].SystemDef</span>
+      <InputText @bind-Value="Qqq[Direction.Down].UserDef" maxlength="1" />
     </div>
     <div class="form-row">
       <label>Up ⬆</label>
-      <span class="system-key">@systemKeybindings[Direction.Up]</span>
-      <InputText @bind-Value="formModel.Up" maxlength="1" />
+      <span class="system-key">@Qqq[Direction.Up].SystemDef</span>
+      <InputText @bind-Value="Qqq[Direction.Up].UserDef" maxlength="1" />
     </div>
     <div class="form-row">
       <label>Right ➡</label>
-      <span class="system-key">@systemKeybindings[Direction.Right]</span>
-      <InputText @bind-Value="formModel.Right" maxlength="1" />
+      <span class="system-key">@Qqq[Direction.Right].SystemDef</span>
+      <InputText @bind-Value="Qqq[Direction.Right].UserDef" maxlength="1" />
     </div>
     <button @ref="myForm" style="display:none">Submit</button>
   </EditForm>
@@ -58,92 +55,16 @@ Best: @game.Scores.Item2.ToString("F2")s
 
     private Game game = new Game();
 
-    // Direction metadata for UI rendering
-    private static readonly Direction[] AllDirections = { Direction.Left, Direction.Down, Direction.Up, Direction.Right };
-
-    private static readonly Dictionary<Direction, (string Arrow, string Label)> DirectionMetadata = new()
-    {
-        { Direction.Left, ("⬅", "Left") },
-        { Direction.Down, ("⬇", "Down") },
-        { Direction.Up, ("⬆", "Up") },
-        { Direction.Right, ("➡", "Right") }
-    };
-
-    // System default keybindings
-    private Dictionary<Direction, string> systemKeybindings = new()
-    {
-        { Direction.Left, "h" },
-        { Direction.Down, "j" },
-        { Direction.Up, "k" },
-        { Direction.Right, "l" }
-    };
-
-    // User-defined keybindings (overrides system defaults)
-    private Dictionary<Direction, string> userKeybindings = AllDirections.ToDictionary(d => d, d => "");
+  public static readonly Dictionary<Direction, Domain01> Qqq =
+  {
+      [Direction.Left] = new() { Key = Direction.Left, Name = "Left", SystemDef = "h", Icon = "⬅" },
+      [Direction.Down] = new() { Key = Direction.Down, Name = "Down", SystemDef = "j", Icon = "⬇" },
+      [Direction.Up] = new() { Key = Direction.Up, Name = "Up", SystemDef = "k", Icon = "⬆" },
+      [Direction.Right] = new() { Key = Direction.Right, Name = "Right", SystemDef = "l", Icon = "➡" },
+  };
 
     // Reference to the dialog element
     private ElementReference configDialog, myForm;
-
-    // Form model for keybinding configuration
-    private KeybindingFormModel formModel = new();
-
-    [NoDuplicateKeys(ErrorMessage = "Duplicate keys detected. Please use unique keys for each direction.")]
-    public class KeybindingFormModel
-    {
-        public string Left { get; set; } = "";
-        public string Down { get; set; } = "";
-        public string Up { get; set; } = "";
-        public string Right { get; set; } = "";
-
-        // Get keybinding value by direction
-        public string GetKey(Direction direction) => direction switch
-        {
-            Direction.Left => Left,
-            Direction.Down => Down,
-            Direction.Up => Up,
-            Direction.Right => Right,
-            _ => ""
-        };
-
-        // Set keybinding value by direction
-        public void SetKey(Direction direction, string value)
-        {
-            switch (direction)
-            {
-                case Direction.Left: Left = value; break;
-                case Direction.Down: Down = value; break;
-                case Direction.Up: Up = value; break;
-                case Direction.Right: Right = value; break;
-            }
-        }
-    }
-
-    // Custom validation attribute for duplicate key detection
-    public class NoDuplicateKeysAttribute : ValidationAttribute
-    {
-        protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
-        {
-            if (value is KeybindingFormModel model)
-            {
-                var keys = new[] { model.Left, model.Down, model.Up, model.Right }
-                    .Where(k => !string.IsNullOrEmpty(k))
-                    .ToList();
-
-                if (keys.Count != keys.Distinct().Count())
-                {
-                    return new ValidationResult(ErrorMessage ?? "Duplicate keys detected.");
-                }
-            }
-
-            return ValidationResult.Success;
-        }
-    }
-
-    private string GetEffectiveKey(Direction direction)
-    {
-        var userKey = userKeybindings[direction];
-        return string.IsNullOrEmpty(userKey) ? systemKeybindings[direction] : userKey;
-    }
 
     private Dictionary<string, object> gridParameters => new()
     {
@@ -164,12 +85,6 @@ Best: @game.Scores.Item2.ToString("F2")s
         if (isOpen)
         {
             await JS.InvokeVoidAsync("callFunctionAny", configDialog, "close");
-        }
-
-        // Update all user keybindings from form model
-        foreach (var direction in AllDirections)
-        {
-            userKeybindings[direction] = formModel.GetKey(direction) ?? "";
         }
     }
 
@@ -205,7 +120,7 @@ Best: @game.Scores.Item2.ToString("F2")s
         // Centralized keyboard shortcut dispatch logic
 
         // Handle configurable navigation keys - check effective keys
-        var matchingDirection = AllDirections.FirstOrDefault(d => GetEffectiveKey(d) == key);
+        var matchingDirection = Qqq.FirstOrDefault(q => q.Value.CurrentDef == key)?.Key ?? Direction.None;
 
         if (matchingDirection != default(Direction))
         {
