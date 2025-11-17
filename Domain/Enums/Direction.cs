@@ -13,14 +13,21 @@ public enum Direction
     Right
 }
 
-public class Domain01
+public interface IHasKey<T> where T : struct, Enum
 {
-  public required Direction Key { get; init; }
+  T Key { get; init; }
+  string Name { get; init; }
+  IHasKey<T> WithKeyAndName(T key, string name);
+}
+public record Domain01 : IHasKey<Direction>
+{
+  public Direction Key { get; init; }
+  public string Name { get; init; } = string.Empty;
   public required string SystemDef { get; init; }
-  public required string Name { get; init; }
   public required string Icon { get; init; }
   public string? UserDef { get; set; } = null;
   public string CurrentDef => string.IsNullOrEmpty(UserDef) ? SystemDef : UserDef;
+  public IHasKey<Direction> WithKeyAndName(Direction key, string name) => this with { Key = key, Name = name };
 }
 
 internal static class EnumHelper
@@ -48,16 +55,23 @@ internal static class EnumHelper
             .Skip(includeNone ? 0 : 1)
             .ToHashSet();
     }
-    public static Dictionary<TEnum, UDomain> Www<TEnum, UDomain>(IEnumerable<UDomain> arr)
+    /// <summary>
+    /// Creates a dictionary mapping enum values to domain objects.
+    /// Merges partial domain objects with enum metadata (Key and Name).
+    /// </summary>
+    /// <typeparam name="TEnum">The enum type to use as dictionary keys</typeparam>
+    /// <typeparam name="UDomain">The domain type to use as dictionary values (must be Domain01)</typeparam>
+    /// <param name="partialObjects">Partial domain objects with SystemDef, Icon, etc.</param>
+    /// <returns>Dictionary mapping enum values to fully initialized domain objects</returns>
+    public static Dictionary<TEnum, UDomain> Www<TEnum, UDomain>(IEnumerable<UDomain> partialObjects)
+        where TEnum : struct, Enum
+        where UDomain : IHasKey<TEnum>
     {
-      return GetValues<TEnum>().Zip(arr, (key, patch) =>
+      var enumValues = GetValues<TEnum>();
+      return enumValues.Zip(partialObjects, (enumValue, partial) =>
       {
-          var newEntry = new UDomain(patch)
-          {
-            Key = key,
-            Name = key.ToString()
-          };
-          return newEntry;
+          // Use 'with' expression to create a new record instance with merged properties
+          return (UDomain)partial.WithKeyAndName(enumValue, enumValue.ToString());
       }).ToDictionary(q => q.Key, q => q);
     }
 }
