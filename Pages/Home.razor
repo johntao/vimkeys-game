@@ -12,7 +12,7 @@
 <button onclick="configDialog.showModal()"><h1>Config Keys</h1></button>
 <h1>
 Keys: &lt;SPACE&gt;@(game.State == GameState.Ready ? "Start" : "Stop")
-@string.Join("\n", Qqq.Values.Select(q => $"{q.CurrentDef}{q.Icon}"))
+@string.Join("\n", KeyCfg.Values.Select(q => $"{q.CurrentDef}{q.Icon}"))
 | Score: @game.Scores.Item1.ToString("F2")s |
 Best: @game.Scores.Item2.ToString("F2")s
 </h1>
@@ -23,27 +23,16 @@ Best: @game.Scores.Item2.ToString("F2")s
   <EditForm Model="this" method="dialog" OnValidSubmit="OnValidFormSubmit" OnInvalidSubmit="OnInvalidFormSubmit">
     <DataAnnotationsValidator />
     <ValidationSummary />
-    <div class="form-row">
-      <label>Left ⬅</label>
-      <span class="system-key">@Qqq[Direction.Left].SystemDef</span>
-      <InputText @bind-Value="Qqq[Direction.Left].UserDef" maxlength="1" />
-    </div>
-    <div class="form-row">
-      <label>Down ⬇</label>
-      <span class="system-key">@Qqq[Direction.Down].SystemDef</span>
-      <InputText @bind-Value="Qqq[Direction.Down].UserDef" maxlength="1" />
-    </div>
-    <div class="form-row">
-      <label>Up ⬆</label>
-      <span class="system-key">@Qqq[Direction.Up].SystemDef</span>
-      <InputText @bind-Value="Qqq[Direction.Up].UserDef" maxlength="1" />
-    </div>
-    <div class="form-row">
-      <label>Right ➡</label>
-      <span class="system-key">@Qqq[Direction.Right].SystemDef</span>
-      <InputText @bind-Value="Qqq[Direction.Right].UserDef" maxlength="1" />
-    </div>
-    <button @ref="myForm" style="display:none">Submit</button>
+    @foreach (var entry in KeyCfg)
+    {
+      var config = entry.Value;
+      <div class="form-row">
+        <label>@config.Name @config.Icon</label>
+        <span class="system-key">@config.SystemDef</span>
+        <InputText @bind-Value="config.UserDef" maxlength="1" />
+      </div>
+    }
+    <button @ref="btnSubmit" style="display:none">Submit</button>
   </EditForm>
 </dialog>
 
@@ -58,7 +47,7 @@ Best: @game.Scores.Item2.ToString("F2")s
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        var duplicates = Qqq.Values
+        var duplicates = KeyCfg.Values
             .Select(d => d.CurrentDef)
             .GroupBy(k => k)
             .Where(g => g.Count() > 1);
@@ -70,7 +59,7 @@ Best: @game.Scores.Item2.ToString("F2")s
         }
     }
 
-  public static readonly Dictionary<Direction, Domain01> Qqq = EnumHelper.Www<Direction, Domain01>([
+  public static readonly Dictionary<Direction, KeyConfig> KeyCfg = typeof(Direction).InitializeDict<Direction, KeyConfig>([
       new() { SystemDef = "h", Icon = "⬅" },
       new() { SystemDef = "j", Icon = "⬇" },
       new() { SystemDef = "k", Icon = "⬆" },
@@ -78,7 +67,7 @@ Best: @game.Scores.Item2.ToString("F2")s
   ]);
 
     // Reference to the dialog element
-    private ElementReference configDialog, myForm;
+    private ElementReference configDialog, btnSubmit;
 
     private Dictionary<string, object> gridParameters => new()
     {
@@ -113,19 +102,7 @@ Best: @game.Scores.Item2.ToString("F2")s
 
     private async Task OnDialogClose()
     {
-        await JS.InvokeVoidAsync("callFunctionAny", myForm, "click");
-    }
-
-    private void StartGame()
-    {
-        game.Start();
-        StateHasChanged();
-    }
-
-    private void ResetGame()
-    {
-        game.Reset();
-        StateHasChanged();
+        await JS.InvokeVoidAsync("callFunctionAny", btnSubmit, "click");
     }
 
     [JSInvokable]
@@ -134,25 +111,29 @@ Best: @game.Scores.Item2.ToString("F2")s
         // Centralized keyboard shortcut dispatch logic
 
         // Handle configurable navigation keys - check effective keys
-        var matchingEntry = Qqq.FirstOrDefault(q => q.Value.CurrentDef == key);
+        var matchingEntry = KeyCfg.FirstOrDefault(q => q.Value.CurrentDef == key);
         var matchingDirection = matchingEntry.Key != Direction.None ? matchingEntry.Key : Direction.None;
 
         if (matchingDirection != Direction.None)
         {
             game.MovePlayer(matchingDirection);
-            StateHasChanged();
         }
         // Handle space key for Start/Reset game
         else if (key == " ")
         {
             if (game.State == GameState.Ready)
             {
-                StartGame();
+                game.Start();
             }
             else if (game.State == GameState.Playing)
             {
-                ResetGame();
+                game.Reset();
             }
         }
+        else
+        {
+          return;
+        }
+        StateHasChanged();
     }
 }
