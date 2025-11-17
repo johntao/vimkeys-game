@@ -2,7 +2,8 @@
 @using p07_vimkeys_game.Components
 @using p07_vimkeys_game.Domain.Entities
 @using p07_vimkeys_game.Domain.ValueObjects
-@inject IJSRuntime JSRuntime
+@using System.ComponentModel.DataAnnotations
+@inject IJSRuntime JS
 
 <PageTitle>Vim Keys Game</PageTitle>
 
@@ -19,31 +20,34 @@ Best: @game.Scores.Item2.ToString("F2")s
 </h1>
 </div>
 
-<dialog id="configDialog" @ref="configDialog" closedby="any">
+<!--dialog id="configDialog" @ref="configDialog" @onclose="OnDialogClose" @onclose:preventDefault closedby="any"-->
+<dialog id="configDialog" @ref="configDialog" @onclose="OnDialogClose" closedby="any">
   <h2>Configure Keybindings</h2>
-  <form id="keybindingForm" method="dialog">
+  <EditForm Model="formModel" method="dialog" OnValidSubmit="OnValidFormSubmit" OnInvalidSubmit="OnInvalidFormSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
     <div class="form-row">
       <label>Left ⬅</label>
       <span class="system-key">@systemKeybindings[Direction.Left]</span>
-      <input type="text" name="left" maxlength="1" value="@userKeybindings[Direction.Left]" />
+      <InputText @bind-Value="formModel.Left" maxlength="1" />
     </div>
     <div class="form-row">
       <label>Down ⬇</label>
       <span class="system-key">@systemKeybindings[Direction.Down]</span>
-      <input type="text" name="down" maxlength="1" value="@userKeybindings[Direction.Down]" />
+      <InputText @bind-Value="formModel.Down" maxlength="1" />
     </div>
     <div class="form-row">
       <label>Up ⬆</label>
       <span class="system-key">@systemKeybindings[Direction.Up]</span>
-      <input type="text" name="up" maxlength="1" value="@userKeybindings[Direction.Up]" />
+      <InputText @bind-Value="formModel.Up" maxlength="1" />
     </div>
     <div class="form-row">
       <label>Right ➡</label>
       <span class="system-key">@systemKeybindings[Direction.Right]</span>
-      <input type="text" name="right" maxlength="1" value="@userKeybindings[Direction.Right]" />
+      <InputText @bind-Value="formModel.Right" maxlength="1" />
     </div>
-    <button style="display:none">Submit</button>
-  </form>
+    <button @ref="myForm" style="display:none">Submit</button>
+  </EditForm>
 </dialog>
 
 <DynamicComponent Type="@gridComponentType"
@@ -74,7 +78,54 @@ Best: @game.Scores.Item2.ToString("F2")s
     };
 
     // Reference to the dialog element
-    private ElementReference configDialog;
+    private ElementReference configDialog, myForm;
+
+    // Form model for keybinding configuration
+    private KeybindingFormModel formModel = new();
+
+    [NoDuplicateKeys(ErrorMessage = "Duplicate keys detected. Please use unique keys for each direction.")]
+    public class KeybindingFormModel // : IValidatableObject
+    {
+        public string Left { get; set; } = "";
+        public string Down { get; set; } = "";
+        public string Up { get; set; } = "";
+        public string Right { get; set; } = "";
+
+//      public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+//      {
+//          var keys = new[] { Left, Down, Up, Right }
+//              .Where(k => !string.IsNullOrEmpty(k))
+//              .ToList();
+//
+//          if (keys.Count != keys.Distinct().Count())
+//          {
+//              yield return new ValidationResult(
+//                  "Duplicate keys detected. Please use unique keys for each direction.",
+//                  new[] { nameof(Left), nameof(Down), nameof(Up), nameof(Right) });
+//          }
+//      }
+    }
+
+    // Custom validation attribute for duplicate key detection
+    public class NoDuplicateKeysAttribute : ValidationAttribute
+    {
+        protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+        {
+            if (value is KeybindingFormModel model)
+            {
+                var keys = new[] { model.Left, model.Down, model.Up, model.Right }
+                    .Where(k => !string.IsNullOrEmpty(k))
+                    .ToList();
+
+                if (keys.Count != keys.Distinct().Count())
+                {
+                    return new ValidationResult(ErrorMessage ?? "Duplicate keys detected.");
+                }
+            }
+
+            return ValidationResult.Success;
+        }
+    }
 
     // Get effective keybinding (user override or system default)
     private string GetEffectiveKey(Direction direction)
@@ -92,32 +143,48 @@ Best: @game.Scores.Item2.ToString("F2")s
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("registerKeyHandler", DotNetObjectReference.Create(this));
-            await JSRuntime.InvokeVoidAsync("registerDialogCloseHandler", configDialog, DotNetObjectReference.Create(this));
+            await JS.InvokeVoidAsync("registerKeyHandler", DotNetObjectReference.Create(this));
         }
     }
 
-    [JSInvokable]
-    public void OnDialogClose(string left, string down, string up, string right)
+//  private async Task OpenConfigDialog()
+//  {
+//      formModel.Left = userKeybindings[Direction.Left];
+//      formModel.Down = userKeybindings[Direction.Down];
+//      formModel.Up = userKeybindings[Direction.Up];
+//      formModel.Right = userKeybindings[Direction.Right];
+//      await JS.InvokeVoidAsync("callFunctionAny", configDialog, "showModal");
+//  }
+
+    private async Task OnValidFormSubmit()
     {
-        // Validate no duplicates
-        var values = new[] { left, down, up, right }
-            .Where(v => !string.IsNullOrEmpty(v))
-            .ToList();
-
-        if (values.Count != values.Distinct().Count())
+        var isOpen = await JS.InvokeAsync<bool>("getPropertyAny", configDialog, "open");
+        if (isOpen)
         {
-            // Has duplicates - could show error, for now just ignore
-            return;
+          await JS.InvokeVoidAsync("callFunctionAny", configDialog, "close");
         }
+        userKeybindings[Direction.Left] = formModel.Left ?? "";
+        userKeybindings[Direction.Down] = formModel.Down ?? "";
+        userKeybindings[Direction.Up] = formModel.Up ?? "";
+        userKeybindings[Direction.Right] = formModel.Right ?? "";
+    }
 
-        // Update user keybindings
-        userKeybindings[Direction.Left] = left ?? "";
-        userKeybindings[Direction.Down] = down ?? "";
-        userKeybindings[Direction.Up] = up ?? "";
-        userKeybindings[Direction.Right] = right ?? "";
+    private async Task OnInvalidFormSubmit()
+    {
+    }
 
-        StateHasChanged();
+    private async Task OnDialogClose()
+    {
+        // Update user keybindings from form model
+        // This only runs when dialog closes (after successful validation)
+        //StateHasChanged();
+        var isOpen = await JS.InvokeAsync<bool>("getPropertyAny", configDialog, "open");
+        if (!isOpen)
+        {
+        await JS.InvokeVoidAsync("callFunctionAny", configDialog, "showModal");
+        }
+        await JS.InvokeVoidAsync("callFunctionAny", myForm, "click");
+
     }
 
     private void StartGame()
