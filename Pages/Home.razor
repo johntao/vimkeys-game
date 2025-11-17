@@ -2,7 +2,9 @@
 @using p07_vimkeys_game.Components
 @using p07_vimkeys_game.Domain.Entities
 @using p07_vimkeys_game.Domain.ValueObjects
+@using System.ComponentModel.DataAnnotations
 @inject IJSRuntime JS
+@implements IValidatableObject
 
 <PageTitle>Vim Keys Game</PageTitle>
 
@@ -19,6 +21,8 @@ Best: @game.Scores.Item2.ToString("F2")s
 <dialog id="configDialog" @ref="configDialog" @onclose="OnDialogClose" closedby="any">
   <h2>Configure Keybindings</h2>
   <EditForm Model="this" method="dialog" OnValidSubmit="OnValidFormSubmit" OnInvalidSubmit="OnInvalidFormSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
     <div class="form-row">
       <label>Left ⬅</label>
       <span class="system-key">@Qqq[Direction.Left].SystemDef</span>
@@ -51,6 +55,20 @@ Best: @game.Scores.Item2.ToString("F2")s
     private Type gridComponentType = typeof(GridV2);
 
     private Game game = new Game();
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        var duplicates = Qqq.Values
+            .Select(d => d.CurrentDef)
+            .GroupBy(k => k)
+            .Where(g => g.Count() > 1);
+        if (duplicates.Any())
+        {
+            yield return new ValidationResult(
+                $"Duplicate keys detected! Each direction must have a unique key."
+            );
+        }
+    }
 
   public static readonly Dictionary<Direction, Domain01> Qqq = new()
   {
