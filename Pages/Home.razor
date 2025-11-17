@@ -70,13 +70,12 @@ Best: @game.Scores.Item2.ToString("F2")s
         }
     }
 
-  public static readonly Dictionary<Direction, Domain01> Qqq = new()
-  {
-      { Direction.Left, new() { Key = Direction.Left, Name = "Left", SystemDef = "h", Icon = "⬅" } },
-      { Direction.Down, new() { Key = Direction.Down, Name = "Down", SystemDef = "j", Icon = "⬇" } },
-      { Direction.Up, new() { Key = Direction.Up, Name = "Up", SystemDef = "k", Icon = "⬆" } },
-      { Direction.Right, new() { Key = Direction.Right, Name = "Right", SystemDef = "l", Icon = "➡" } },
-  };
+  public static readonly Dictionary<Direction, Domain01> Qqq = EnumHelper.Www<Domain01>([
+      new() { SystemDef = "h", Icon = "⬅" },
+      new() { SystemDef = "j", Icon = "⬇" },
+      new() { SystemDef = "k", Icon = "⬆" },
+      new() { SystemDef = "l", Icon = "➡" },
+  ]);
 
     // Reference to the dialog element
     private ElementReference configDialog, myForm;
