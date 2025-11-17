@@ -20,7 +20,6 @@ Best: @game.Scores.Item2.ToString("F2")s
 </h1>
 </div>
 
-<!--dialog id="configDialog" @ref="configDialog" @onclose="OnDialogClose" @onclose:preventDefault closedby="any"-->
 <dialog id="configDialog" @ref="configDialog" @onclose="OnDialogClose" closedby="any">
   <h2>Configure Keybindings</h2>
   <EditForm Model="formModel" method="dialog" OnValidSubmit="OnValidFormSubmit" OnInvalidSubmit="OnInvalidFormSubmit">
@@ -147,20 +146,16 @@ Best: @game.Scores.Item2.ToString("F2")s
 
     private async Task OnInvalidFormSubmit()
     {
-    }
-
-    private async Task OnDialogClose()
-    {
-        // Update user keybindings from form model
-        // This only runs when dialog closes (after successful validation)
-        //StateHasChanged();
         var isOpen = await JS.InvokeAsync<bool>("getPropertyAny", configDialog, "open");
         if (!isOpen)
         {
         await JS.InvokeVoidAsync("callFunctionAny", configDialog, "showModal");
         }
-        await JS.InvokeVoidAsync("callFunctionAny", myForm, "click");
+    }
 
+    private async Task OnDialogClose()
+    {
+        await JS.InvokeVoidAsync("callFunctionAny", myForm, "click");
     }
 
     private void StartGame()
