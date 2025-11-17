@@ -1,0 +1,49 @@
+
+@page "/test"
+@inject IJSRuntime JS
+
+<PageTitle>test</PageTitle>
+
+<button onclick="this.nextElementSibling.showModal()"><h1>Config Keys</h1></button>
+<dialog @ref="dialogElement" @onclose="OnDialogClose" closedby="any">
+  <h2>Configure Keybindings</h2>
+  <EditForm Model="formModel" method="dialog" OnSubmit="OnFormSubmit">
+    <div class="form-row">
+      <label>First Name</label>
+      <InputText @bind-Value="formModel.FirstName" />
+    </div>
+    <div class="form-row">
+      <label>Last Name</label>
+      <InputText @bind-Value="formModel.LastName" />
+    </div>
+    <button style="display:none">Submit</button>
+  </EditForm>
+</dialog>
+
+
+@code {
+    private ElementReference dialogElement;
+    private FormModel formModel = new();
+
+    public class FormModel
+    {
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
+    }
+
+    private async Task OnFormSubmit()
+    {
+        var qq = await JS.InvokeAsync<bool>("getPropertyAny", dialogElement, "open");
+        if (qq)
+        {
+          await JS.InvokeVoidAsync("callFunctionAny", dialogElement, "close");
+        }
+        await JS.InvokeVoidAsync("console.log", "Form submitted:", formModel.FirstName, formModel.LastName, qq);
+    }
+
+    private async Task OnDialogClose()
+    {
+        var qq = await JS.InvokeAsync<bool>("getPropertyAny", dialogElement, "open");
+        await JS.InvokeVoidAsync("console.log", "Dialog Close:", formModel.FirstName, formModel.LastName, qq);
+    }
+}

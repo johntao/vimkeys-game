@@ -51,3 +51,12 @@ window.registerDialogCloseHandler = (dialogElement, dotNetHelper) => {
         dotNetHelper.invokeMethodAsync('OnDialogClose', left, down, up, right);
     });
 };
+
+window.getPropertyAny = (element, propertyName) => {
+    if (!element) return null;
+    return element[propertyName];
+}
+window.callFunctionAny = (element, funcName) => {
+    if (!element) return null;
+    element[funcName]();
+}
