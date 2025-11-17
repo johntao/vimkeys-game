@@ -84,26 +84,12 @@ Best: @game.Scores.Item2.ToString("F2")s
     private KeybindingFormModel formModel = new();
 
     [NoDuplicateKeys(ErrorMessage = "Duplicate keys detected. Please use unique keys for each direction.")]
-    public class KeybindingFormModel // : IValidatableObject
+    public class KeybindingFormModel
     {
         public string Left { get; set; } = "";
         public string Down { get; set; } = "";
         public string Up { get; set; } = "";
         public string Right { get; set; } = "";
-
-//      public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-//      {
-//          var keys = new[] { Left, Down, Up, Right }
-//              .Where(k => !string.IsNullOrEmpty(k))
-//              .ToList();
-//
-//          if (keys.Count != keys.Distinct().Count())
-//          {
-//              yield return new ValidationResult(
-//                  "Duplicate keys detected. Please use unique keys for each direction.",
-//                  new[] { nameof(Left), nameof(Down), nameof(Up), nameof(Right) });
-//          }
-//      }
     }
 
     // Custom validation attribute for duplicate key detection
@@ -127,7 +113,6 @@ Best: @game.Scores.Item2.ToString("F2")s
         }
     }
 
-    // Get effective keybinding (user override or system default)
     private string GetEffectiveKey(Direction direction)
     {
         var userKey = userKeybindings[direction];
@@ -146,15 +131,6 @@ Best: @game.Scores.Item2.ToString("F2")s
             await JS.InvokeVoidAsync("registerKeyHandler", DotNetObjectReference.Create(this));
         }
     }
-
-//  private async Task OpenConfigDialog()
-//  {
-//      formModel.Left = userKeybindings[Direction.Left];
-//      formModel.Down = userKeybindings[Direction.Down];
-//      formModel.Up = userKeybindings[Direction.Up];
-//      formModel.Right = userKeybindings[Direction.Right];
-//      await JS.InvokeVoidAsync("callFunctionAny", configDialog, "showModal");
-//  }
 
     private async Task OnValidFormSubmit()
     {
