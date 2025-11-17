@@ -58,6 +58,17 @@ Best: @game.Scores.Item2.ToString("F2")s
 
     private Game game = new Game();
 
+    // Direction metadata for UI rendering
+    private static readonly Direction[] AllDirections = { Direction.Left, Direction.Down, Direction.Up, Direction.Right };
+
+    private static readonly Dictionary<Direction, (string Arrow, string Label)> DirectionMetadata = new()
+    {
+        { Direction.Left, ("⬅", "Left") },
+        { Direction.Down, ("⬇", "Down") },
+        { Direction.Up, ("⬆", "Up") },
+        { Direction.Right, ("➡", "Right") }
+    };
+
     // System default keybindings
     private Dictionary<Direction, string> systemKeybindings = new()
     {
@@ -68,13 +79,7 @@ Best: @game.Scores.Item2.ToString("F2")s
     };
 
     // User-defined keybindings (overrides system defaults)
-    private Dictionary<Direction, string> userKeybindings = new()
-    {
-        { Direction.Left, "" },
-        { Direction.Down, "" },
-        { Direction.Up, "" },
-        { Direction.Right, "" }
-    };
+    private Dictionary<Direction, string> userKeybindings = AllDirections.ToDictionary(d => d, d => "");
 
     // Reference to the dialog element
     private ElementReference configDialog, myForm;
@@ -89,6 +94,28 @@ Best: @game.Scores.Item2.ToString("F2")s
         public string Down { get; set; } = "";
         public string Up { get; set; } = "";
         public string Right { get; set; } = "";
+
+        // Get keybinding value by direction
+        public string GetKey(Direction direction) => direction switch
+        {
+            Direction.Left => Left,
+            Direction.Down => Down,
+            Direction.Up => Up,
+            Direction.Right => Right,
+            _ => ""
+        };
+
+        // Set keybinding value by direction
+        public void SetKey(Direction direction, string value)
+        {
+            switch (direction)
+            {
+                case Direction.Left: Left = value; break;
+                case Direction.Down: Down = value; break;
+                case Direction.Up: Up = value; break;
+                case Direction.Right: Right = value; break;
+            }
+        }
     }
 
     // Custom validation attribute for duplicate key detection
@@ -136,12 +163,14 @@ Best: @game.Scores.Item2.ToString("F2")s
         var isOpen = await JS.InvokeAsync<bool>("getPropertyAny", configDialog, "open");
         if (isOpen)
         {
-          await JS.InvokeVoidAsync("callFunctionAny", configDialog, "close");
+            await JS.InvokeVoidAsync("callFunctionAny", configDialog, "close");
         }
-        userKeybindings[Direction.Left] = formModel.Left ?? "";
-        userKeybindings[Direction.Down] = formModel.Down ?? "";
-        userKeybindings[Direction.Up] = formModel.Up ?? "";
-        userKeybindings[Direction.Right] = formModel.Right ?? "";
+
+        // Update all user keybindings from form model
+        foreach (var direction in AllDirections)
+        {
+            userKeybindings[direction] = formModel.GetKey(direction) ?? "";
+        }
     }
 
     private async Task OnInvalidFormSubmit()
@@ -149,7 +178,7 @@ Best: @game.Scores.Item2.ToString("F2")s
         var isOpen = await JS.InvokeAsync<bool>("getPropertyAny", configDialog, "open");
         if (!isOpen)
         {
-        await JS.InvokeVoidAsync("callFunctionAny", configDialog, "showModal");
+            await JS.InvokeVoidAsync("callFunctionAny", configDialog, "showModal");
         }
     }
 
@@ -176,8 +205,7 @@ Best: @game.Scores.Item2.ToString("F2")s
         // Centralized keyboard shortcut dispatch logic
 
         // Handle configurable navigation keys - check effective keys
-        var matchingDirection = new[] { Direction.Left, Direction.Down, Direction.Up, Direction.Right }
-            .FirstOrDefault(d => GetEffectiveKey(d) == key);
+        var matchingDirection = AllDirections.FirstOrDefault(d => GetEffectiveKey(d) == key);
 
         if (matchingDirection != default(Direction))
         {
