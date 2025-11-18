@@ -30,6 +30,10 @@ Best: @game.Scores.Item2.ToString("F2")s
         <label>@config.Name @config.Icon</label>
         <span class="system-key">@config.SystemDef</span>
         <InputText @bind-Value="config.UserDef" maxlength="1" />
+        @if (config is BasicXTimes xTimes)
+        {
+          <InputNumber @bind-Value="xTimes.UserDefinedMultiplier" placeholder="4" min="2" max="9" />
+        }
       </div>
     }
     <button @ref="btnSubmit" style="display:none">Submit</button>
@@ -128,7 +132,7 @@ Best: @game.Scores.Item2.ToString("F2")s
             var config = matchingEntry.Value;
             if (config is BasicXTimes xMove)
             {
-                game.MovePlayerMultiple(xMove.Direction, xMove.Multiplier);
+                game.MovePlayerMultiple(xMove.Direction, xMove.CurrentMultiplier);
             }
             else if (config is BasicMovement basic)
             {

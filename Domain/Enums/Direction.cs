@@ -53,11 +53,19 @@ public record BasicMovement(int directionIndex) : KeyConfig
 
 /// <summary>
 /// Configuration for multiplier movement keys (e.g., 4x movement)
-/// Inherits Direction from BasicMovement and adds a multiplier
+/// Inherits Direction from BasicMovement and adds a configurable multiplier
 /// </summary>
 public record BasicXTimes(int directionIndex) : BasicMovement(directionIndex)
 {
-  public int Multiplier { get; init; } = 4;
+  /// <summary>
+  /// User-defined multiplier value. If null, uses default of 4.
+  /// </summary>
+  public int? UserDefinedMultiplier { get; set; } = null;
+
+  /// <summary>
+  /// Gets the effective multiplier value (user-defined or default 4)
+  /// </summary>
+  public int CurrentMultiplier => UserDefinedMultiplier ?? 4;
 }
 
 /// <summary>

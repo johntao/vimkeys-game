@@ -27,7 +27,7 @@ dialog::backdrop {
 
 .form-row {
   display: grid;
-  grid-template-columns: 80px 60px 60px;
+  grid-template-columns: 80px 60px 60px 60px;
   gap: 10px;
   margin-bottom: 10px;
   align-items: center;
