@@ -19,7 +19,12 @@
     Grid V3
   </label>
 </div>
-<!-- TODO: add checkbox here -->
+<div class="random-droppables-option">
+  <label>
+    <input type="checkbox" checked="@useRandomDroppables" @onchange="OnRandomDroppablesChange" />
+    Random Droppables
+  </label>
+</div>
 <button onclick="configDialog.showModal()"><h1>Config Keys</h1></button>
 <h1>
 Keys: &lt;SPACE&gt;@(game.State == GameState.Ready ? "Start" : "Stop")
@@ -29,7 +34,7 @@ Best: @game.Scores.Item2.ToString("F2")s
 </h1>
 </div>
 
-<dialog id="configDialog" @ref="configDialog" @onclose="OnDialogClose" closedby="any">
+<dialog id="configDialog" @ref="configDialog" @onclose="OnDialogClose" closedby="any" tabindex="-1">
   <h2>Configure Keybindings</h2>
   <EditForm Model="this" method="dialog" OnValidSubmit="OnValidFormSubmit" OnInvalidSubmit="OnInvalidFormSubmit">
     <DataAnnotationsValidator />
@@ -40,10 +45,10 @@ Best: @game.Scores.Item2.ToString("F2")s
       <div class="form-row">
         <label>@config.Name @config.Icon</label>
         <span class="system-key">@config.SystemDef</span>
-        <InputText @bind-Value="config.UserDef" maxlength="1" />
+        <InputText @bind-Value="config.UserDef" maxlength="1" tabindex="1" />
         @if (config is BasicXTimes xTimes)
         {
-          <InputNumber @bind-Value="xTimes.UserDefinedMultiplier" placeholder="4" min="2" max="9" />
+          <InputNumber @bind-Value="xTimes.UserDefinedMultiplier" placeholder="4" min="2" max="9" tabindex="2" />
         }
       </div>
     }
@@ -57,6 +62,7 @@ Best: @game.Scores.Item2.ToString("F2")s
 @code {
     private Type gridComponentType = typeof(GridV2);
     private string selectedGridVersion = "v2";
+    private bool useRandomDroppables = false;
 
     private Game game = new Game();
 
@@ -69,6 +75,14 @@ Best: @game.Scores.Item2.ToString("F2")s
             "v3" => typeof(GridV3),
             _ => typeof(GridV2)
         };
+        StateHasChanged();
+    }
+
+    private void OnRandomDroppablesChange(ChangeEventArgs e)
+    {
+        useRandomDroppables = (bool)(e.Value ?? false);
+        game.UseRandomDroppables = useRandomDroppables;
+        game.Reset();
         StateHasChanged();
     }
 

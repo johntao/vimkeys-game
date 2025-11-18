@@ -9,6 +9,8 @@ using p07_vimkeys_game.Domain.ValueObjects;
 public class Game
 {
     public const int GridSize = 10;
+    private const int DroppableCount = 9;
+    private static readonly Random _random = new Random();
 
     public Player Player { get; private set; }
     public List<Droppable> Droppables { get; private set; }
@@ -16,6 +18,7 @@ public class Game
     public DateTime? StartTime { get; private set; }
     public DateTime? EndTime { get; private set; }
     public (double, double) Scores { get; private set; }
+    public bool UseRandomDroppables { get; set; } = false;
 
 
     /// <summary>
@@ -28,20 +31,8 @@ public class Game
         Player = new Player(new Position(0, 0)); // Start at top-left
         Scores = (999, 999);
 
-        // Auto-initialize with default droppable positions
-        var droppablePositions = new List<Position>
-        {
-            new Position(2, 1),
-            new Position(1, 2),
-            new Position(3, 2),
-            new Position(2, 3),
-            new Position(4, 4),
-            new Position(7, 6),
-            new Position(5, 8),
-            new Position(8, 3),
-            new Position(9, 9)
-        };
-
+        // Initialize with fixed positions by default (UseRandomDroppables defaults to false)
+        var droppablePositions = GetFixedPositions();
         Droppables = droppablePositions.Select(pos => new Droppable(pos)).ToList();
         State = GameState.Ready;
     }
@@ -142,8 +133,22 @@ public class Game
     /// </summary>
     public void Reset()
     {
-        // Reset droppables to initial positions
-        var droppablePositions = new List<Position>
+        var droppablePositions = UseRandomDroppables
+            ? GenerateRandomPositions()
+            : GetFixedPositions();
+
+        Droppables = droppablePositions.Select(pos => new Droppable(pos)).ToList();
+        StartTime = null;
+        EndTime = null;
+        State = GameState.Ready;
+    }
+
+    /// <summary>
+    /// Gets the fixed droppable positions
+    /// </summary>
+    private List<Position> GetFixedPositions()
+    {
+        return new List<Position>
         {
             new Position(2, 1),
             new Position(1, 2),
@@ -153,13 +158,32 @@ public class Game
             new Position(7, 6),
             new Position(5, 8),
             new Position(8, 3),
-            new Position(9, 9)
+            new Position(9, 9),
         };
+    }
 
-        Droppables = droppablePositions.Select(pos => new Droppable(pos)).ToList();
-        StartTime = null;
-        EndTime = null;
-        State = GameState.Ready;
+    /// <summary>
+    /// Generates random unique positions for droppables
+    /// Ensures no position overlaps with the player's starting position
+    /// </summary>
+    private List<Position> GenerateRandomPositions()
+    {
+        var positions = new HashSet<Position>();
+
+        while (positions.Count < DroppableCount)
+        {
+            var x = _random.Next(0, GridSize);
+            var y = _random.Next(0, GridSize);
+            var pos = new Position(x, y);
+
+            // Don't place droppable at player's starting position
+            if (pos != Player.Position)
+            {
+                positions.Add(pos);
+            }
+        }
+
+        return positions.ToList();
     }
 }
 
