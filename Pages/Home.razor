@@ -9,6 +9,17 @@
 <PageTitle>Vim Keys Game</PageTitle>
 
 <div class="top-info">
+<div class="grid-selector">
+  <label>
+    <input type="radio" name="gridVersion" value="v2" checked="@(selectedGridVersion == "v2")" @onchange="@(() => OnGridVersionChange("v2"))" />
+    Grid V2
+  </label>
+  <label>
+    <input type="radio" name="gridVersion" value="v3" checked="@(selectedGridVersion == "v3")" @onchange="@(() => OnGridVersionChange("v3"))" />
+    Grid V3
+  </label>
+</div>
+<!-- TODO: add checkbox here -->
 <button onclick="configDialog.showModal()"><h1>Config Keys</h1></button>
 <h1>
 Keys: &lt;SPACE&gt;@(game.State == GameState.Ready ? "Start" : "Stop")
@@ -44,10 +55,22 @@ Best: @game.Scores.Item2.ToString("F2")s
                   Parameters="@gridParameters" />
 
 @code {
-    // GAME MAKER DECIDES: Change to typeof(GridV1) for anchor-based rendering
     private Type gridComponentType = typeof(GridV2);
+    private string selectedGridVersion = "v2";
 
     private Game game = new Game();
+
+    private void OnGridVersionChange(string version)
+    {
+        selectedGridVersion = version;
+        gridComponentType = version switch
+        {
+            "v2" => typeof(GridV2),
+            "v3" => typeof(GridV3),
+            _ => typeof(GridV2)
+        };
+        StateHasChanged();
+    }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

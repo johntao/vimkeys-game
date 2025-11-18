@@ -1,4 +1,4 @@
-@* GridV2 - CSS Grid with class-based player highlighting (poc-v2 style) *@
+@* GridV3 - Enhanced CSS Grid with blue dot droppables and collected state *@
 @using p07_vimkeys_game.Domain.Entities
 @using p07_vimkeys_game.Domain.ValueObjects
 
@@ -18,10 +18,12 @@
       var currentPos = new Position(x, y);
       var isPlayer = Game.Player.Position == currentPos;
       var hasDroppable = Game.Droppables.Any(d => !d.IsCollected && d.Position == currentPos);
+      var wasCollected = Game.Droppables.Any(d => d.IsCollected && d.Position == currentPos);
 
       var classes = "cell";
       if (isPlayer) classes += " player";
       if (hasDroppable) classes += " droppable";
+      if (wasCollected) classes += " collected";
 
       <div class="@classes" data-row="@y" data-col="@x"></div>
     }
