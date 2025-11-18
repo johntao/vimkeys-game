@@ -18,7 +18,7 @@
       var currentPos = new Position(x, y);
       var isPlayer = Game.Player.Position == currentPos;
       var hasDroppable = Game.Droppables.Any(d => !d.IsCollected && d.Position == currentPos);
-      var isVisited = Game.ShowTrail && Game.VisitedPositions.Contains(currentPos);
+      var isVisited = Game.VisitedPositions.Contains(currentPos);
 
       var classes = "cell";
       if (isPlayer) classes += " player";

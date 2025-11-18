@@ -20,6 +20,8 @@ public class Game
     public bool UseRandomDroppables { get; set; } = false;
     public int DroppableCount { get; set; } = 9;
     public bool ShowTrail { get; set; } = false;
+    public int VisitThreshold { get; set; } = 5;
+    public string GridVersion { get; set; } = "v2";
     public HashSet<Position> VisitedPositions { get; private set; } = new();
 
 
@@ -75,10 +77,26 @@ public class Game
 
         if (State == GameState.Playing)
         {
-            // Track visited position if trail is enabled and game is playing
-            if (ShowTrail)
+            // Check if current position has an uncollected droppable
+            var hasDroppable = Droppables.Any(d => !d.IsCollected && d.Position == Player.Position);
+
+            // GridV3 specific: Remove from visited positions when ShowTrail is off and revisiting
+            if (GridVersion == "v3" && !ShowTrail && VisitedPositions.Contains(Player.Position))
             {
-                VisitedPositions.Add(Player.Position);
+                VisitedPositions.Remove(Player.Position);
+            }
+            // Track visited position if trail is enabled and game is playing
+            else if (ShowTrail)
+            {
+                // GridV3 specific: Don't add droppable cells to visited positions
+                if (GridVersion == "v3" && hasDroppable)
+                {
+                    // Skip adding this position
+                }
+                else
+                {
+                    VisitedPositions.Add(Player.Position);
+                }
             }
 
             // Check if player collected a droppable
@@ -87,6 +105,13 @@ public class Game
             // Check if all droppables are collected
             if (RemainingDroppables == 0)
             {
+                // GridV3 specific: Only complete if within visit threshold
+                if (GridVersion == "v3" && VisitedPositions.Count > VisitThreshold)
+                {
+                    // Don't complete - player exceeded threshold
+                    return true;
+                }
+
                 CompleteGame();
             }
         }
@@ -112,9 +137,16 @@ public class Game
 
     /// <summary>
     /// Checks if the player's current position matches any uncollected droppable
+    /// GridV3: Only collects when ShowTrail is enabled
     /// </summary>
     private void CheckDroppableCollection()
     {
+        // GridV3 specific: Only collect droppables when ShowTrail is enabled
+        if (GridVersion == "v3" && !ShowTrail)
+        {
+            return;
+        }
+
         var droppable = Droppables.FirstOrDefault(d =>
             !d.IsCollected && d.Position == Player.Position);
 

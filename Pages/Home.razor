@@ -48,8 +48,12 @@ Best: @game.Scores.Item2.ToString("F2")s
       <InputNumber @bind-Value="droppableCount" min="1" max="100" />
     </div>
     <div>
-      <label>Show Trail (Experimental)</label>
+      <label>Show Trail</label>
       <input type="checkbox" checked="@showTrail" @onchange="OnShowTrailChange" />
+    </div>
+    <div>
+      <label>Visit Threshold (Fill up only)</label>
+      <InputNumber @bind-Value="visitThreshold" min="1" max="100" />
     </div>
     <button @ref="btnGameSubmit" style="display:none">Submit</button>
   </EditForm>
@@ -86,18 +90,21 @@ Best: @game.Scores.Item2.ToString("F2")s
     private bool useRandomDroppables = false;
     private int droppableCount = 9;
     private bool showTrail = false;
+    private int visitThreshold = 5;
 
     private Game game = new Game();
 
     private void OnGridVersionChange(ChangeEventArgs e)
     {
-        var version = e.Value;
+        var version = e.Value?.ToString() ?? "v2";
+        selectedGridVersion = version;
         gridComponentType = version switch
         {
             "v2" => typeof(GridV2),
             "v3" => typeof(GridV3),
             _ => typeof(GridV2)
         };
+        game.GridVersion = version;
     }
 
     private void OnRandomDroppablesChange(ChangeEventArgs e)
@@ -110,9 +117,32 @@ Best: @game.Scores.Item2.ToString("F2")s
 
     private void OnShowTrailChange(ChangeEventArgs e)
     {
-        showTrail = (bool)(e.Value ?? false);
+        var newTrailState = (bool)(e.Value ?? false);
+
+        // Simulate visiting/revisiting the current cell
+        if (game.State == GameState.Playing)
+        {
+            var currentPos = game.Player.Position;
+            var hasDroppable = game.Droppables.Any(d => !d.IsCollected && d.Position == currentPos);
+
+            if (newTrailState)
+            {
+                // Enabling: Add current position (like visiting)
+                // GridV3: Don't add if it's a droppable cell
+                if (!(game.GridVersion == "v3" && hasDroppable))
+                {
+                    game.VisitedPositions.Add(currentPos);
+                }
+            }
+            else
+            {
+                // Disabling: Remove current position (like revisiting with trail off)
+                game.VisitedPositions.Remove(currentPos);
+            }
+        }
+
+        showTrail = newTrailState;
         game.ShowTrail = showTrail;
-        game.Reset();
     }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
@@ -187,6 +217,8 @@ Best: @game.Scores.Item2.ToString("F2")s
         game.DroppableCount = droppableCount;
         game.UseRandomDroppables = useRandomDroppables;
         game.ShowTrail = showTrail;
+        game.VisitThreshold = visitThreshold;
+        game.GridVersion = selectedGridVersion;
         game.Reset();
 
         var isOpen = await JS.InvokeAsync<bool>("getPropertyAny", gameConfigDialog, "open");
@@ -241,6 +273,14 @@ Best: @game.Scores.Item2.ToString("F2")s
             {
                 game.Reset();
             }
+        }
+        // Handle space key to toggle trail feature
+        else if (key == " ")
+        {
+            var newTrailState = !showTrail;
+            showTrail = !showTrail;
+            game.ShowTrail = showTrail;
+            game.MovePlayer(Direction.None);
         }
         else
         {
