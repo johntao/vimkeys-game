@@ -12,7 +12,7 @@
 <button onclick="configDialog.showModal()"><h1>Config Keys</h1></button>
 <h1>
 Keys: &lt;SPACE&gt;@(game.State == GameState.Ready ? "Start" : "Stop")
-@string.Join("\n", KeyCfg.Values.Select(q => $"{q.CurrentDef}{q.Icon}"))
+@string.Join("\n", KeyCfg.Values.Where(q => q is not BasicXTimes).Select(q => $"{q.CurrentDef}{q.Icon}"))
 | Score: @game.Scores.Item1.ToString("F2")s |
 Best: @game.Scores.Item2.ToString("F2")s
 </h1>
@@ -23,18 +23,7 @@ Best: @game.Scores.Item2.ToString("F2")s
   <EditForm Model="this" method="dialog" OnValidSubmit="OnValidFormSubmit" OnInvalidSubmit="OnInvalidFormSubmit">
     <DataAnnotationsValidator />
     <ValidationSummary />
-    <h3>Basic Movements</h3>
     @foreach (var entry in KeyCfg)
-    {
-      var config = entry.Value;
-      <div class="form-row">
-        <label>@config.Name @config.Icon</label>
-        <span class="system-key">@config.SystemDef</span>
-        <InputText @bind-Value="config.UserDef" maxlength="1" />
-      </div>
-    }
-    <h3>Multiplier Movements (4×)</h3>
-    @foreach (var entry in MultiplierKeyCfg)
     {
       var config = entry.Value;
       <div class="form-row">
@@ -58,10 +47,9 @@ Best: @game.Scores.Item2.ToString("F2")s
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        // Collect all effective keys from both basic and multiplier configs
+        // Collect all effective keys from the unified config
         var allKeys = KeyCfg.Values
             .Select(d => d.CurrentDef)
-            .Concat(MultiplierKeyCfg.Values.Select(m => m.CurrentDef))
             .ToList();
 
         var duplicates = allKeys
@@ -77,48 +65,16 @@ Best: @game.Scores.Item2.ToString("F2")s
         }
     }
 
-  public static readonly Dictionary<Direction, KeyConfig> KeyCfg = typeof(Direction).InitializeDict<Direction, KeyConfig>([
-      new() { SystemDef = "h", Icon = "⬅" },
-      new() { SystemDef = "j", Icon = "⬇" },
-      new() { SystemDef = "k", Icon = "⬆" },
-      new() { SystemDef = "l", Icon = "➡" },
+  public static readonly Dictionary<AllConfig, KeyConfig> KeyCfg = AllConfig.None.InitializeDict((KeyConfig[])[
+      new BasicMovement(1) { SystemDef = "h", Icon = "⬅" },
+      new BasicMovement(2) { SystemDef = "j", Icon = "⬇" },
+      new BasicMovement(3) { SystemDef = "k", Icon = "⬆" },
+      new BasicMovement(4) { SystemDef = "l", Icon = "➡" },
+      new BasicXTimes(1) { SystemDef = "y", Icon = "⬅×4" },
+      new BasicXTimes(2) { SystemDef = "u", Icon = "⬇×4" },
+      new BasicXTimes(3) { SystemDef = "i", Icon = "⬆×4" },
+      new BasicXTimes(4) { SystemDef = "o", Icon = "➡×4" },
   ]);
-
-  public static readonly Dictionary<string, MultiplierKey> MultiplierKeyCfg = new()
-  {
-      ["Left4x"] = new()
-      {
-          Name = "4×Left",
-          LinkedDirection = Direction.Left,
-          Multiplier = 4,
-          SystemDef = "y",
-          Icon = "⬅×4"
-      },
-      ["Down4x"] = new()
-      {
-          Name = "4×Down",
-          LinkedDirection = Direction.Down,
-          Multiplier = 4,
-          SystemDef = "u",
-          Icon = "⬇×4"
-      },
-      ["Up4x"] = new()
-      {
-          Name = "4×Up",
-          LinkedDirection = Direction.Up,
-          Multiplier = 4,
-          SystemDef = "i",
-          Icon = "⬆×4"
-      },
-      ["Right4x"] = new()
-      {
-          Name = "4×Right",
-          LinkedDirection = Direction.Right,
-          Multiplier = 4,
-          SystemDef = "o",
-          Icon = "➡×4"
-      },
-  };
 
     // Reference to the dialog element
     private ElementReference configDialog, btnSubmit;
@@ -164,38 +120,36 @@ Best: @game.Scores.Item2.ToString("F2")s
     {
         // Centralized keyboard shortcut dispatch logic
 
-        // Handle configurable navigation keys - check effective keys
+        // Find matching key in unified config
         var matchingEntry = KeyCfg.FirstOrDefault(q => q.Value.CurrentDef == key);
-        var matchingDirection = matchingEntry.Key != Direction.None ? matchingEntry.Key : Direction.None;
 
-        if (matchingDirection != Direction.None)
+        if (matchingEntry.Key != AllConfig.None)
         {
-            game.MovePlayer(matchingDirection);
+            var config = matchingEntry.Value;
+            if (config is BasicXTimes xMove)
+            {
+                game.MovePlayerMultiple(xMove.Direction, xMove.Multiplier);
+            }
+            else if (config is BasicMovement basic)
+            {
+                game.MovePlayer(basic.Direction);
+            }
         }
-        // Handle configurable multiplier movement shortcuts
+        // Handle space key for Start/Reset game
+        else if (key == " ")
+        {
+            if (game.State == GameState.Ready)
+            {
+                game.Start();
+            }
+            else if (game.State == GameState.Playing)
+            {
+                game.Reset();
+            }
+        }
         else
         {
-            var multiplierMatch = MultiplierKeyCfg.Values.FirstOrDefault(q => q.CurrentDef == key);
-            if (multiplierMatch != null)
-            {
-                game.MovePlayerMultiple(multiplierMatch.LinkedDirection, multiplierMatch.Multiplier);
-            }
-            // Handle space key for Start/Reset game
-            else if (key == " ")
-            {
-                if (game.State == GameState.Ready)
-                {
-                    game.Start();
-                }
-                else if (game.State == GameState.Playing)
-                {
-                    game.Reset();
-                }
-            }
-            else
-            {
-                return;
-            }
+            return;
         }
         StateHasChanged();
     }

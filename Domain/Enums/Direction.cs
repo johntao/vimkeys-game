@@ -31,7 +31,7 @@ public interface IHasKey<T> where T : struct, Enum
   string Name { get; init; }
   IHasKey<T> WithKeyAndName(T key, string name);
 }
-public record KeyConfig : IHasKey<AllConfig>
+public abstract record KeyConfig : IHasKey<AllConfig>
 {
   public AllConfig Key { get; init; }
   public string Name { get; init; } = string.Empty;
@@ -43,9 +43,19 @@ public record KeyConfig : IHasKey<AllConfig>
 }
 
 /// <summary>
-/// Configuration for multiplier movement keys (e.g., 4x movement)
+/// Configuration for basic movement keys (hjkl)
+/// Links to a Direction for single-step movement
 /// </summary>
-public record MultiplierKey : KeyConfig
+public record BasicMovement(int directionIndex) : KeyConfig
+{
+  public Direction Direction { get; init; } = (Direction)directionIndex;
+}
+
+/// <summary>
+/// Configuration for multiplier movement keys (e.g., 4x movement)
+/// Inherits Direction from BasicMovement and adds a multiplier
+/// </summary>
+public record BasicXTimes(int directionIndex) : BasicMovement(directionIndex)
 {
   public int Multiplier { get; init; } = 4;
 }
@@ -64,15 +74,10 @@ public static class EnumTypeExtensions
     /// <param name="enumType">The enum Type (not used, only for extension syntax)</param>
     /// <param name="partialObjects">Partial domain objects with required properties</param>
     /// <returns>Dictionary mapping enum values to fully initialized domain objects</returns>
-    public static Dictionary<TEnum, TDomain> InitializeDict<TEnum, TDomain>(this Type enumType, IEnumerable<TDomain> partialObjects)
+    public static Dictionary<TEnum, TDomain> InitializeDict<TEnum, TDomain>(this TEnum _, IEnumerable<TDomain> partialObjects)
         where TEnum : struct, Enum
         where TDomain : IHasKey<TEnum>
     {
-        if (!enumType.IsEnum || enumType != typeof(TEnum))
-        {
-            throw new ArgumentException($"Type parameter must match the enum type. Expected {typeof(TEnum).Name}, got {enumType.Name}");
-        }
-
         return Enum.GetValues<TEnum>().Skip(1).Zip(partialObjects, (enumValue, partial) =>
         {
             return (TDomain)partial.WithKeyAndName(enumValue, enumValue.ToString());
