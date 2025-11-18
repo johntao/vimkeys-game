@@ -9,7 +9,6 @@ using p07_vimkeys_game.Domain.ValueObjects;
 public class Game
 {
     public const int GridSize = 10;
-    private const int DroppableCount = 9;
     private static readonly Random _random = new Random();
 
     public Player Player { get; private set; }
@@ -19,6 +18,7 @@ public class Game
     public DateTime? EndTime { get; private set; }
     public (double, double) Scores { get; private set; }
     public bool UseRandomDroppables { get; set; } = false;
+    public int DroppableCount { get; set; } = 9;
 
 
     /// <summary>
@@ -32,8 +32,7 @@ public class Game
         Scores = (999, 999);
 
         // Initialize with fixed positions by default (UseRandomDroppables defaults to false)
-        var droppablePositions = GetFixedPositions();
-        Droppables = droppablePositions.Select(pos => new Droppable(pos)).ToList();
+        Droppables = FixedPositions.Select(pos => new Droppable(pos)).ToList();
         State = GameState.Ready;
     }
 
@@ -135,7 +134,7 @@ public class Game
     {
         var droppablePositions = UseRandomDroppables
             ? GenerateRandomPositions()
-            : GetFixedPositions();
+            : FixedPositions;
 
         Droppables = droppablePositions.Select(pos => new Droppable(pos)).ToList();
         StartTime = null;
@@ -145,22 +144,13 @@ public class Game
 
     /// <summary>
     /// Gets the fixed droppable positions
+    /// Returns up to DroppableCount positions from a predefined list
     /// </summary>
-    private List<Position> GetFixedPositions()
-    {
-        return new List<Position>
-        {
-            new Position(2, 1),
-            new Position(1, 2),
-            new Position(3, 2),
-            new Position(2, 3),
-            new Position(4, 4),
-            new Position(7, 6),
-            new Position(5, 8),
-            new Position(8, 3),
-            new Position(9, 9),
-        };
-    }
+    private List<Position> FixedPositions = [
+        new(2, 1), new(1, 2), new(3, 2),
+        new(2, 3), new(4, 4), new(7, 6),
+        new(5, 8), new(8, 3), new(9, 9),
+    ];
 
     /// <summary>
     /// Generates random unique positions for droppables

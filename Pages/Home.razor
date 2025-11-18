@@ -9,26 +9,11 @@
 <PageTitle>Vim Keys Game</PageTitle>
 
 <div class="top-info">
-<div class="grid-selector">
-  <label>
-    <input type="radio" name="gridVersion" value="v2" checked="@(selectedGridVersion == "v2")" @onchange="OnGridVersionChange" />
-    Grid V2
-  </label>
-  <label>
-    <input type="radio" name="gridVersion" value="v3" checked="@(selectedGridVersion == "v3")" @onchange="OnGridVersionChange" />
-    Grid V3
-  </label>
-</div>
-<div class="random-droppables-option">
-  <label>
-    <input type="checkbox" checked="@useRandomDroppables" @onchange="OnRandomDroppablesChange" />
-    Random Droppables
-  </label>
-</div>
+<button onclick="gameConfigDialog.showModal()"><h1>Game</h1></button>
 <button onclick="configDialog.showModal()"><h1>Keys</h1></button>
 <h1>
 |
-<span class="system-key">&lt;ENTER&gt;@(game.State == GameState.Ready ? "Start" : "Stop")</span>
+<span class="system-key">&lt;\&gt;@(game.State == GameState.Ready ? "Start" : "Stop")</span>
 @foreach (var w in KeyCfg.Values.Where(q => q is not BasicXTimes))
 {
   <span class="system-key">@w.CurrentDef@w.Icon</span>
@@ -37,6 +22,34 @@
 Best: @game.Scores.Item2.ToString("F2")s
 </h1>
 </div>
+
+<dialog id="gameConfigDialog" @ref="gameConfigDialog" @onclose="OnGameDialogClose" closedby="any" tabindex="-1">
+  <h2>Game Configuration</h2>
+  <EditForm Model="this" method="dialog" OnValidSubmit="OnGameValidFormSubmit" OnInvalidSubmit="OnGameInvalidFormSubmit">
+    <div>
+      <label>Grid Version</label>
+      <span>
+        <label>
+          <input type="radio" name="gridVersion" value="v2" checked="@(selectedGridVersion == "v2")" @onchange="OnGridVersionChange" />
+          Pick up
+        </label>
+        <label>
+          <input type="radio" name="gridVersion" value="v3" checked="@(selectedGridVersion == "v3")" @onchange="OnGridVersionChange" />
+          Fill up
+        </label>
+      </span>
+    </div>
+    <div>
+      <label>Random Droppables</label>
+      <input type="checkbox" checked="@useRandomDroppables" @onchange="OnRandomDroppablesChange" />
+    </div>
+    <div>
+      <label>Droppable Count</label>
+      <InputNumber @bind-Value="droppableCount" min="1" max="100" />
+    </div>
+    <button @ref="btnGameSubmit" style="display:none">Submit</button>
+  </EditForm>
+</dialog>
 
 <dialog id="configDialog" @ref="configDialog" @onclose="OnDialogClose" closedby="any" tabindex="-1">
   <h2>Configure Keybindings</h2>
@@ -67,6 +80,7 @@ Best: @game.Scores.Item2.ToString("F2")s
     private Type gridComponentType = typeof(GridV2);
     private string selectedGridVersion = "v2";
     private bool useRandomDroppables = false;
+    private int droppableCount = 9;
 
     private Game game = new Game();
 
@@ -85,6 +99,7 @@ Best: @game.Scores.Item2.ToString("F2")s
     {
         useRandomDroppables = (bool)(e.Value ?? false);
         game.UseRandomDroppables = useRandomDroppables;
+        game.DroppableCount = droppableCount;
         game.Reset();
     }
 
@@ -115,7 +130,8 @@ Best: @game.Scores.Item2.ToString("F2")s
       new BasicXTimes(4) { SystemDef = "o", Icon = "➡×4" },
   ]);
 
-    // Reference to the dialog element
+    // Reference to the dialog elements
+    private ElementReference gameConfigDialog, btnGameSubmit;
     private ElementReference configDialog, btnSubmit;
 
     private Dictionary<string, object> gridParameters => new()
@@ -154,6 +170,33 @@ Best: @game.Scores.Item2.ToString("F2")s
         await JS.InvokeVoidAsync("callFunctionAny", btnSubmit, "click");
     }
 
+    private async Task OnGameValidFormSubmit()
+    {
+        game.DroppableCount = droppableCount;
+        game.UseRandomDroppables = useRandomDroppables;
+        game.Reset();
+
+        var isOpen = await JS.InvokeAsync<bool>("getPropertyAny", gameConfigDialog, "open");
+        if (isOpen)
+        {
+            await JS.InvokeVoidAsync("callFunctionAny", gameConfigDialog, "close");
+        }
+    }
+
+    private async Task OnGameInvalidFormSubmit()
+    {
+        var isOpen = await JS.InvokeAsync<bool>("getPropertyAny", gameConfigDialog, "open");
+        if (!isOpen)
+        {
+            await JS.InvokeVoidAsync("callFunctionAny", gameConfigDialog, "showModal");
+        }
+    }
+
+    private async Task OnGameDialogClose()
+    {
+        await JS.InvokeVoidAsync("callFunctionAny", btnGameSubmit, "click");
+    }
+
     [JSInvokable]
     public void HandleKeyDown(string key, bool ctrlKey, bool shiftKey, bool altKey, bool metaKey)
     {
@@ -175,7 +218,7 @@ Best: @game.Scores.Item2.ToString("F2")s
             }
         }
         // Handle Enter key for Start/Reset game
-        else if (key == "Enter")
+        else if (key == "\\")
         {
             if (game.State == GameState.Ready)
             {
