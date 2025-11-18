@@ -1,0 +1,25 @@
+/* Static styles for GridV2 component */
+/* Note: grid-template-columns and grid-template-rows are in the .razor file
+   because they use Razor syntax (@Game.GridSize) which doesn't work in .css files */
+
+#grid {
+  display: grid;
+  max-width: fit-content;
+  margin-inline: auto;
+  border: 1px solid black;
+}
+
+.cell {
+  border: 1px solid black;
+  text-align: center;
+}
+
+.player::after {
+  content: '▢';
+  font-size: 60px;
+  line-height: 60px;
+}
+
+.droppable {
+  background-color: black;
+}
