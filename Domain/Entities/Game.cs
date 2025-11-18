@@ -19,6 +19,8 @@ public class Game
     public (double, double) Scores { get; private set; }
     public bool UseRandomDroppables { get; set; } = false;
     public int DroppableCount { get; set; } = 9;
+    public bool ShowTrail { get; set; } = false;
+    public HashSet<Position> VisitedPositions { get; private set; } = new();
 
 
     /// <summary>
@@ -48,6 +50,13 @@ public class Game
 
         StartTime = DateTime.UtcNow;
         State = GameState.Playing;
+
+        // Initialize trail with starting position when game starts
+        if (ShowTrail)
+        {
+            VisitedPositions.Clear();
+            VisitedPositions.Add(Player.Position);
+        }
     }
 
     /// <summary>
@@ -66,6 +75,12 @@ public class Game
 
         if (State == GameState.Playing)
         {
+            // Track visited position if trail is enabled and game is playing
+            if (ShowTrail)
+            {
+                VisitedPositions.Add(Player.Position);
+            }
+
             // Check if player collected a droppable
             CheckDroppableCollection();
 
@@ -140,6 +155,9 @@ public class Game
         StartTime = null;
         EndTime = null;
         State = GameState.Ready;
+
+        // Clear visited positions (trail will be initialized when game starts)
+        VisitedPositions.Clear();
     }
 
     /// <summary>

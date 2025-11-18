@@ -47,6 +47,10 @@ Best: @game.Scores.Item2.ToString("F2")s
       <label>Droppable Count</label>
       <InputNumber @bind-Value="droppableCount" min="1" max="100" />
     </div>
+    <div>
+      <label>Show Trail (Experimental)</label>
+      <input type="checkbox" checked="@showTrail" @onchange="OnShowTrailChange" />
+    </div>
     <button @ref="btnGameSubmit" style="display:none">Submit</button>
   </EditForm>
 </dialog>
@@ -81,6 +85,7 @@ Best: @game.Scores.Item2.ToString("F2")s
     private string selectedGridVersion = "v2";
     private bool useRandomDroppables = false;
     private int droppableCount = 9;
+    private bool showTrail = false;
 
     private Game game = new Game();
 
@@ -100,6 +105,13 @@ Best: @game.Scores.Item2.ToString("F2")s
         useRandomDroppables = (bool)(e.Value ?? false);
         game.UseRandomDroppables = useRandomDroppables;
         game.DroppableCount = droppableCount;
+        game.Reset();
+    }
+
+    private void OnShowTrailChange(ChangeEventArgs e)
+    {
+        showTrail = (bool)(e.Value ?? false);
+        game.ShowTrail = showTrail;
         game.Reset();
     }
 
@@ -174,6 +186,7 @@ Best: @game.Scores.Item2.ToString("F2")s
     {
         game.DroppableCount = droppableCount;
         game.UseRandomDroppables = useRandomDroppables;
+        game.ShowTrail = showTrail;
         game.Reset();
 
         var isOpen = await JS.InvokeAsync<bool>("getPropertyAny", gameConfigDialog, "open");

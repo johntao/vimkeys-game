@@ -20,7 +20,7 @@
 }
 
 /* Player styling - white square */
-.player::after {
+.player::before {
   content: '▢';
   font-size: 60px;
   color: #0066cc;
@@ -30,12 +30,23 @@
 /* Droppable styling - blue dot (same as V2 player) */
 .droppable::after {
   content: '●';
-  font-size: 35px;
+  font-size: 30px;
   color: #0066cc;
-  line-height: 53px;
+  line-height: 60px;
+  font-family: mono;
+}
+
+.cell.droppable.player {
+  position: relative;
+  &::before {
+    width: 100%;
+    position: absolute;
+    right: 0
+  }
 }
 
 /* Collected state - black background (same as V2 droppable) */
 .collected {
   background-color: black;
 }
+

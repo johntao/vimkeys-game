@@ -14,7 +14,7 @@
   text-align: center;
 }
 
-.player::after {
+.player::before {
   content: '▢';
   font-size: 60px;
   color: #0066cc;
@@ -23,7 +23,17 @@
 
 .droppable::after {
   content: '●';
-  font-size: 35px;
+  font-size: 30px;
   color: #0066cc;
-  line-height: 53px;
+  line-height: 60px;
+  font-family: mono;
+}
+
+.cell.droppable.player {
+  position: relative;
+  &::before {
+    width: 100%;
+    position: absolute;
+    right: 0
+  }
 }

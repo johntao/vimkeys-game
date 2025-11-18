@@ -19,13 +19,16 @@
       var isPlayer = Game.Player.Position == currentPos;
       var hasDroppable = Game.Droppables.Any(d => !d.IsCollected && d.Position == currentPos);
       var wasCollected = Game.Droppables.Any(d => d.IsCollected && d.Position == currentPos);
+      var isVisited = Game.ShowTrail && Game.VisitedPositions.Contains(currentPos);
 
       var classes = "cell";
       if (isPlayer) classes += " player";
       if (hasDroppable) classes += " droppable";
       if (wasCollected) classes += " collected";
 
-      <div class="@classes" data-row="@y" data-col="@x"></div>
+      var style = isVisited && !wasCollected ? "background-color: grey;" : "";
+
+      <div class="@classes" style="@style" data-row="@y" data-col="@x"></div>
     }
   }
 </div>
