@@ -30,7 +30,7 @@
 /* Droppable styling - blue dot (same as V2 player) */
 .droppable::after {
   content: '●';
-  font-size: 60px;
+  font-size: 35px;
   color: #0066cc;
   line-height: 53px;
 }

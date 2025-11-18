@@ -15,12 +15,15 @@
 }
 
 .player::after {
-  content: '●';
+  content: '▢';
   font-size: 60px;
   color: #0066cc;
-  line-height: 53px;
+  line-height: 60px;
 }
 
-.droppable {
-  background-color: black;
+.droppable::after {
+  content: '●';
+  font-size: 35px;
+  color: #0066cc;
+  line-height: 53px;
 }
