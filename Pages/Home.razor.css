@@ -14,6 +14,10 @@ button>h1 {
   display: inline-block
 }
 
+h1>.system-key {
+  margin-inline: 3px;
+}
+
 dialog {
   font-family: monospace;
   padding: 20px;

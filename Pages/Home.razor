@@ -11,11 +11,11 @@
 <div class="top-info">
 <div class="grid-selector">
   <label>
-    <input type="radio" name="gridVersion" value="v2" checked="@(selectedGridVersion == "v2")" @onchange="@(() => OnGridVersionChange("v2"))" />
+    <input type="radio" name="gridVersion" value="v2" checked="@(selectedGridVersion == "v2")" @onchange="OnGridVersionChange" />
     Grid V2
   </label>
   <label>
-    <input type="radio" name="gridVersion" value="v3" checked="@(selectedGridVersion == "v3")" @onchange="@(() => OnGridVersionChange("v3"))" />
+    <input type="radio" name="gridVersion" value="v3" checked="@(selectedGridVersion == "v3")" @onchange="OnGridVersionChange" />
     Grid V3
   </label>
 </div>
@@ -25,10 +25,14 @@
     Random Droppables
   </label>
 </div>
-<button onclick="configDialog.showModal()"><h1>Config Keys</h1></button>
+<button onclick="configDialog.showModal()"><h1>Keys</h1></button>
 <h1>
-Keys: &lt;SPACE&gt;@(game.State == GameState.Ready ? "Start" : "Stop")
-@string.Join("\n", KeyCfg.Values.Where(q => q is not BasicXTimes).Select(q => $"{q.CurrentDef}{q.Icon}"))
+|
+<span class="system-key">&lt;ENTER&gt;@(game.State == GameState.Ready ? "Start" : "Stop")</span>
+@foreach (var w in KeyCfg.Values.Where(q => q is not BasicXTimes))
+{
+  <span class="system-key">@w.CurrentDef@w.Icon</span>
+}
 | Score: @game.Scores.Item1.ToString("F2")s |
 Best: @game.Scores.Item2.ToString("F2")s
 </h1>
@@ -66,16 +70,15 @@ Best: @game.Scores.Item2.ToString("F2")s
 
     private Game game = new Game();
 
-    private void OnGridVersionChange(string version)
+    private void OnGridVersionChange(ChangeEventArgs e)
     {
-        selectedGridVersion = version;
+        var version = e.Value;
         gridComponentType = version switch
         {
             "v2" => typeof(GridV2),
             "v3" => typeof(GridV3),
             _ => typeof(GridV2)
         };
-        StateHasChanged();
     }
 
     private void OnRandomDroppablesChange(ChangeEventArgs e)
@@ -83,17 +86,12 @@ Best: @game.Scores.Item2.ToString("F2")s
         useRandomDroppables = (bool)(e.Value ?? false);
         game.UseRandomDroppables = useRandomDroppables;
         game.Reset();
-        StateHasChanged();
     }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        // Collect all effective keys from the unified config
-        var allKeys = KeyCfg.Values
+        var duplicates = KeyCfg.Values
             .Select(d => d.CurrentDef)
-            .ToList();
-
-        var duplicates = allKeys
             .GroupBy(k => k)
             .Where(g => g.Count() > 1);
 
@@ -176,8 +174,8 @@ Best: @game.Scores.Item2.ToString("F2")s
                 game.MovePlayer(basic.Direction);
             }
         }
-        // Handle space key for Start/Reset game
-        else if (key == " ")
+        // Handle Enter key for Start/Reset game
+        else if (key == "Enter")
         {
             if (game.State == GameState.Ready)
             {
