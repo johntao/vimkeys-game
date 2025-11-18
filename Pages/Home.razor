@@ -23,7 +23,18 @@ Best: @game.Scores.Item2.ToString("F2")s
   <EditForm Model="this" method="dialog" OnValidSubmit="OnValidFormSubmit" OnInvalidSubmit="OnInvalidFormSubmit">
     <DataAnnotationsValidator />
     <ValidationSummary />
+    <h3>Basic Movements</h3>
     @foreach (var entry in KeyCfg)
+    {
+      var config = entry.Value;
+      <div class="form-row">
+        <label>@config.Name @config.Icon</label>
+        <span class="system-key">@config.SystemDef</span>
+        <InputText @bind-Value="config.UserDef" maxlength="1" />
+      </div>
+    }
+    <h3>Multiplier Movements (4×)</h3>
+    @foreach (var entry in MultiplierKeyCfg)
     {
       var config = entry.Value;
       <div class="form-row">
@@ -47,14 +58,21 @@ Best: @game.Scores.Item2.ToString("F2")s
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        var duplicates = KeyCfg.Values
+        // Collect all effective keys from both basic and multiplier configs
+        var allKeys = KeyCfg.Values
             .Select(d => d.CurrentDef)
+            .Concat(MultiplierKeyCfg.Values.Select(m => m.CurrentDef))
+            .ToList();
+
+        var duplicates = allKeys
             .GroupBy(k => k)
             .Where(g => g.Count() > 1);
+
         if (duplicates.Any())
         {
+            var duplicateKeys = string.Join(", ", duplicates.Select(g => g.Key));
             yield return new ValidationResult(
-                $"Duplicate keys detected! Each direction must have a unique key."
+                $"Duplicate keys detected: {duplicateKeys}. Each movement must have a unique key."
             );
         }
     }
@@ -65,6 +83,42 @@ Best: @game.Scores.Item2.ToString("F2")s
       new() { SystemDef = "k", Icon = "⬆" },
       new() { SystemDef = "l", Icon = "➡" },
   ]);
+
+  public static readonly Dictionary<string, MultiplierKey> MultiplierKeyCfg = new()
+  {
+      ["Left4x"] = new()
+      {
+          Name = "4×Left",
+          LinkedDirection = Direction.Left,
+          Multiplier = 4,
+          SystemDef = "y",
+          Icon = "⬅×4"
+      },
+      ["Down4x"] = new()
+      {
+          Name = "4×Down",
+          LinkedDirection = Direction.Down,
+          Multiplier = 4,
+          SystemDef = "u",
+          Icon = "⬇×4"
+      },
+      ["Up4x"] = new()
+      {
+          Name = "4×Up",
+          LinkedDirection = Direction.Up,
+          Multiplier = 4,
+          SystemDef = "i",
+          Icon = "⬆×4"
+      },
+      ["Right4x"] = new()
+      {
+          Name = "4×Right",
+          LinkedDirection = Direction.Right,
+          Multiplier = 4,
+          SystemDef = "o",
+          Icon = "➡×4"
+      },
+  };
 
     // Reference to the dialog element
     private ElementReference configDialog, btnSubmit;
@@ -118,21 +172,30 @@ Best: @game.Scores.Item2.ToString("F2")s
         {
             game.MovePlayer(matchingDirection);
         }
-        // Handle space key for Start/Reset game
-        else if (key == " ")
-        {
-            if (game.State == GameState.Ready)
-            {
-                game.Start();
-            }
-            else if (game.State == GameState.Playing)
-            {
-                game.Reset();
-            }
-        }
+        // Handle configurable multiplier movement shortcuts
         else
         {
-          return;
+            var multiplierMatch = MultiplierKeyCfg.Values.FirstOrDefault(q => q.CurrentDef == key);
+            if (multiplierMatch != null)
+            {
+                game.MovePlayerMultiple(multiplierMatch.LinkedDirection, multiplierMatch.Multiplier);
+            }
+            // Handle space key for Start/Reset game
+            else if (key == " ")
+            {
+                if (game.State == GameState.Ready)
+                {
+                    game.Start();
+                }
+                else if (game.State == GameState.Playing)
+                {
+                    game.Reset();
+                }
+            }
+            else
+            {
+                return;
+            }
         }
         StateHasChanged();
     }

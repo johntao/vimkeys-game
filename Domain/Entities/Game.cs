@@ -90,6 +90,22 @@ public class Game
     }
 
     /// <summary>
+    /// Moves the player multiple times in the specified direction
+    /// Stops if the player hits a boundary
+    /// </summary>
+    public void MovePlayerMultiple(Direction direction, int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            bool moved = MovePlayer(direction);
+            if (!moved)
+            {
+                break; // Stop if we hit a boundary
+            }
+        }
+    }
+
+    /// <summary>
     /// Checks if the player's current position matches any uncollected droppable
     /// </summary>
     private void CheckDroppableCollection()

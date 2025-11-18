@@ -12,6 +12,18 @@ public enum Direction
     Up,
     Right
 }
+public enum AllConfig
+{
+    None,
+    Left,
+    Down,
+    Up,
+    Right,
+    LeftX,
+    DownX,
+    UpX,
+    RightX,
+}
 
 public interface IHasKey<T> where T : struct, Enum
 {
@@ -19,15 +31,23 @@ public interface IHasKey<T> where T : struct, Enum
   string Name { get; init; }
   IHasKey<T> WithKeyAndName(T key, string name);
 }
-public record KeyConfig : IHasKey<Direction>
+public record KeyConfig : IHasKey<AllConfig>
 {
-  public Direction Key { get; init; }
+  public AllConfig Key { get; init; }
   public string Name { get; init; } = string.Empty;
   public required string SystemDef { get; init; }
   public required string Icon { get; init; }
   public string? UserDef { get; set; } = null;
   public string CurrentDef => string.IsNullOrEmpty(UserDef) ? SystemDef : UserDef;
-  public IHasKey<Direction> WithKeyAndName(Direction key, string name) => this with { Key = key, Name = name };
+  public IHasKey<AllConfig> WithKeyAndName(AllConfig key, string name) => this with { Key = key, Name = name };
+}
+
+/// <summary>
+/// Configuration for multiplier movement keys (e.g., 4x movement)
+/// </summary>
+public record MultiplierKey : KeyConfig
+{
+  public int Multiplier { get; init; } = 4;
 }
 
 /// <summary>
