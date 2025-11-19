@@ -2,6 +2,7 @@
 @using p07_vimkeys_game.Components
 @using p07_vimkeys_game.Domain.Entities
 @using p07_vimkeys_game.Domain.ValueObjects
+@using p07_vimkeys_game.Domain.Plugins
 @using System.ComponentModel.DataAnnotations
 @inject IJSRuntime JS
 @implements IValidatableObject
@@ -104,7 +105,15 @@ Best: @game.Scores.Item2.ToString("F2")s
             "v3" => typeof(GridV3),
             _ => typeof(GridV2)
         };
-        game.GridVersion = version;
+
+        // Switch plugin based on version
+        var plugin = version switch
+        {
+            "v2" => new PickUpPlugin(),
+            "v3" => new FillUpPlugin(),
+            _ => new PickUpPlugin()
+        };
+        game.SetPlugin(plugin);
     }
 
     private void OnRandomDroppablesChange(ChangeEventArgs e)
@@ -118,31 +127,8 @@ Best: @game.Scores.Item2.ToString("F2")s
     private void OnShowTrailChange(ChangeEventArgs e)
     {
         var newTrailState = (bool)(e.Value ?? false);
-
-        // Simulate visiting/revisiting the current cell
-        if (game.State == GameState.Playing)
-        {
-            var currentPos = game.Player.Position;
-            var hasDroppable = game.Droppables.Any(d => !d.IsCollected && d.Position == currentPos);
-
-            if (newTrailState)
-            {
-                // Enabling: Add current position (like visiting)
-                // GridV3: Don't add if it's a droppable cell
-                if (!(game.GridVersion == "v3" && hasDroppable))
-                {
-                    game.VisitedPositions.Add(currentPos);
-                }
-            }
-            else
-            {
-                // Disabling: Remove current position (like revisiting with trail off)
-                game.VisitedPositions.Remove(currentPos);
-            }
-        }
-
         showTrail = newTrailState;
-        game.ShowTrail = showTrail;
+        game.ShowTrail = showTrail; // Plugin handles the trail logic internally
     }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
@@ -218,7 +204,15 @@ Best: @game.Scores.Item2.ToString("F2")s
         game.UseRandomDroppables = useRandomDroppables;
         game.ShowTrail = showTrail;
         game.VisitThreshold = visitThreshold;
-        game.GridVersion = selectedGridVersion;
+
+        // Switch plugin if grid version changed
+        var plugin = selectedGridVersion switch
+        {
+            "v2" => new PickUpPlugin(),
+            "v3" => new FillUpPlugin(),
+            _ => new PickUpPlugin()
+        };
+        game.SetPlugin(plugin);
         game.Reset();
 
         var isOpen = await JS.InvokeAsync<bool>("getPropertyAny", gameConfigDialog, "open");
@@ -277,10 +271,8 @@ Best: @game.Scores.Item2.ToString("F2")s
         // Handle space key to toggle trail feature
         else if (key == " ")
         {
-            var newTrailState = !showTrail;
             showTrail = !showTrail;
-            game.ShowTrail = showTrail;
-            game.MovePlayer(Direction.None);
+            game.ShowTrail = showTrail; // Plugin handles the trail logic internally
         }
         else
         {

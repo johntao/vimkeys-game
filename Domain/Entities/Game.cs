@@ -1,6 +1,7 @@
 namespace p07_vimkeys_game.Domain.Entities;
 
 using p07_vimkeys_game.Domain.ValueObjects;
+using p07_vimkeys_game.Domain.Plugins;
 
 /// <summary>
 /// Game aggregate root that manages the entire game state
@@ -19,10 +20,83 @@ public class Game
     public (double, double) Scores { get; private set; }
     public bool UseRandomDroppables { get; set; } = false;
     public int DroppableCount { get; set; } = 9;
-    public bool ShowTrail { get; set; } = false;
-    public int VisitThreshold { get; set; } = 5;
-    public string GridVersion { get; set; } = "v2";
-    public HashSet<Position> VisitedPositions { get; private set; } = new();
+
+    // Plugin system
+    private IGridPlugin _plugin;
+    private bool _showTrail = false;
+    private int _visitThreshold = 5;
+
+    /// <summary>
+    /// Gets the current grid plugin
+    /// </summary>
+    public IGridPlugin Plugin => _plugin;
+
+    /// <summary>
+    /// Gets or sets the trail visualization setting
+    /// </summary>
+    public bool ShowTrail
+    {
+        get => _showTrail;
+        set
+        {
+            if (_showTrail != value)
+            {
+                _showTrail = value;
+                UpdatePluginConfiguration();
+
+                // Notify plugin of trail toggle
+                if (_plugin is PickUpPlugin pickUpPlugin)
+                {
+                    pickUpPlugin.SetShowTrail(value, Player.Position);
+                }
+                else if (_plugin is FillUpPlugin fillUpPlugin)
+                {
+                    fillUpPlugin.SetShowTrail(value, Player.Position, this);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the visit threshold (for FillUp mode)
+    /// </summary>
+    public int VisitThreshold
+    {
+        get => _visitThreshold;
+        set
+        {
+            if (_visitThreshold != value)
+            {
+                _visitThreshold = value;
+                UpdatePluginConfiguration();
+
+                // Notify FillUpPlugin of threshold change
+                if (_plugin is FillUpPlugin fillUpPlugin)
+                {
+                    fillUpPlugin.SetVisitThreshold(value);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Backward compatibility: Gets visited positions from plugin
+    /// </summary>
+    public HashSet<Position> VisitedPositions
+    {
+        get
+        {
+            if (_plugin is PickUpPlugin pickUpPlugin)
+            {
+                return new HashSet<Position>(pickUpPlugin.VisitedPositions);
+            }
+            else if (_plugin is FillUpPlugin fillUpPlugin)
+            {
+                return new HashSet<Position>(fillUpPlugin.VisitedPositions);
+            }
+            return new HashSet<Position>();
+        }
+    }
 
 
     /// <summary>
@@ -30,14 +104,45 @@ public class Game
     /// </summary>
     public int RemainingDroppables => Droppables.Count(d => !d.IsCollected);
 
-    public Game()
+    /// <summary>
+    /// Creates a new game with the specified plugin
+    /// </summary>
+    /// <param name="plugin">Grid plugin to use (defaults to PickUpPlugin)</param>
+    public Game(IGridPlugin? plugin = null)
     {
+        _plugin = plugin ?? new PickUpPlugin();
         Player = new Player(new Position(0, 0)); // Start at top-left
         Scores = (999, 999);
 
         // Initialize with fixed positions by default (UseRandomDroppables defaults to false)
         Droppables = FixedPositions.Select(pos => new Droppable(pos)).ToList();
         State = GameState.Ready;
+
+        // Configure plugin with initial settings
+        UpdatePluginConfiguration();
+    }
+
+    /// <summary>
+    /// Sets the grid plugin (allows switching between PickUp and FillUp modes)
+    /// </summary>
+    public void SetPlugin(IGridPlugin plugin)
+    {
+        _plugin = plugin;
+        UpdatePluginConfiguration();
+        _plugin.OnGameReset(this);
+    }
+
+    /// <summary>
+    /// Updates plugin configuration with current game settings
+    /// </summary>
+    private void UpdatePluginConfiguration()
+    {
+        var config = new Dictionary<string, object>
+        {
+            { "ShowTrail", _showTrail },
+            { "VisitThreshold", _visitThreshold }
+        };
+        _plugin.Configure(config);
     }
 
     /// <summary>
@@ -53,11 +158,20 @@ public class Game
         StartTime = DateTime.UtcNow;
         State = GameState.Playing;
 
+        // Delegate to plugin for game start logic
+        _plugin.OnGameStart(this);
+
         // Initialize trail with starting position when game starts
         if (ShowTrail)
         {
-            VisitedPositions.Clear();
-            VisitedPositions.Add(Player.Position);
+            if (_plugin is PickUpPlugin pickUpPlugin)
+            {
+                pickUpPlugin.SetShowTrail(true, Player.Position);
+            }
+            else if (_plugin is FillUpPlugin fillUpPlugin)
+            {
+                fillUpPlugin.SetShowTrail(true, Player.Position, this);
+            }
         }
     }
 
@@ -67,6 +181,8 @@ public class Game
     /// </summary>
     public bool MovePlayer(Direction direction)
     {
+        var oldPosition = Player.Position;
+
         // Attempt to move the player
         bool moved = Player.TryMove(direction);
 
@@ -77,41 +193,15 @@ public class Game
 
         if (State == GameState.Playing)
         {
-            // Check if current position has an uncollected droppable
-            var hasDroppable = Droppables.Any(d => !d.IsCollected && d.Position == Player.Position);
-
-            // GridV3 specific: Remove from visited positions when ShowTrail is off and revisiting
-            if (GridVersion == "v3" && !ShowTrail && VisitedPositions.Contains(Player.Position))
-            {
-                VisitedPositions.Remove(Player.Position);
-            }
-            // Track visited position if trail is enabled and game is playing
-            else if (ShowTrail)
-            {
-                // GridV3 specific: Don't add droppable cells to visited positions
-                if (GridVersion == "v3" && hasDroppable)
-                {
-                    // Skip adding this position
-                }
-                else
-                {
-                    VisitedPositions.Add(Player.Position);
-                }
-            }
+            // Delegate to plugin for movement handling
+            _plugin.OnPlayerMoved(oldPosition, Player.Position, this);
 
             // Check if player collected a droppable
             CheckDroppableCollection();
 
-            // Check if all droppables are collected
-            if (RemainingDroppables == 0)
+            // Check if game completion conditions are met
+            if (_plugin.IsGameComplete(this))
             {
-                // GridV3 specific: Only complete if within visit threshold
-                if (GridVersion == "v3" && VisitedPositions.Count > VisitThreshold)
-                {
-                    // Don't complete - player exceeded threshold
-                    return true;
-                }
-
                 CompleteGame();
             }
         }
@@ -137,12 +227,12 @@ public class Game
 
     /// <summary>
     /// Checks if the player's current position matches any uncollected droppable
-    /// GridV3: Only collects when ShowTrail is enabled
+    /// Delegates to plugin to determine if collection should occur
     /// </summary>
     private void CheckDroppableCollection()
     {
-        // GridV3 specific: Only collect droppables when ShowTrail is enabled
-        if (GridVersion == "v3" && !ShowTrail)
+        // Check if plugin allows collection at current position
+        if (!_plugin.ShouldCollectDroppable(Player.Position, this))
         {
             return;
         }
@@ -150,7 +240,11 @@ public class Game
         var droppable = Droppables.FirstOrDefault(d =>
             !d.IsCollected && d.Position == Player.Position);
 
-        droppable?.Collect();
+        if (droppable != null)
+        {
+            droppable.Collect();
+            _plugin.OnDroppableCollected(Player.Position, this);
+        }
     }
 
     /// <summary>
@@ -188,8 +282,8 @@ public class Game
         EndTime = null;
         State = GameState.Ready;
 
-        // Clear visited positions (trail will be initialized when game starts)
-        VisitedPositions.Clear();
+        // Delegate to plugin for reset logic
+        _plugin.OnGameReset(this);
     }
 
     /// <summary>

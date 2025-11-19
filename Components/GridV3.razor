@@ -18,15 +18,14 @@
       var currentPos = new Position(x, y);
       var isPlayer = Game.Player.Position == currentPos;
       var hasDroppable = Game.Droppables.Any(d => !d.IsCollected && d.Position == currentPos);
-      var wasCollected = Game.Droppables.Any(d => d.IsCollected && d.Position == currentPos);
-      var isVisited = Game.VisitedPositions.Contains(currentPos);
+      var cellState = Game.Plugin.GetCellVisualState(currentPos, Game);
 
       var classes = "cell";
       if (isPlayer) classes += " player";
       if (hasDroppable) classes += " droppable";
-      if (wasCollected) classes += " collected";
+      if (cellState.IsCollected) classes += " collected";
 
-      var style = isVisited && !wasCollected ? "background-color: grey;" : "";
+      var style = cellState.IsVisited && !cellState.IsCollected ? "background-color: grey;" : "";
 
       <div class="@classes" style="@style" data-row="@y" data-col="@x"></div>
     }
