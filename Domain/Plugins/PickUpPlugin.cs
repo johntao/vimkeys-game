@@ -16,14 +16,6 @@ public class PickUpPlugin : IGridPlugin
     public string Name => "pickup";
     public string Description => "Collect all droppables by moving over them";
 
-    public void Configure(Dictionary<string, object> config)
-    {
-        if (config.TryGetValue("ShowTrail", out var showTrail) && showTrail is bool trailValue)
-        {
-            _showTrail = trailValue;
-        }
-    }
-
     public void OnGameStart(Game game)
     {
         // Nothing special to do on start

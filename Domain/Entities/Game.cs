@@ -23,80 +23,11 @@ public class Game
 
     // Plugin system
     private IGridPlugin _plugin;
-    private bool _showTrail = false;
-    private int _visitThreshold = 5;
 
     /// <summary>
     /// Gets the current grid plugin
     /// </summary>
     public IGridPlugin Plugin => _plugin;
-
-    /// <summary>
-    /// Gets or sets the trail visualization setting
-    /// </summary>
-    public bool ShowTrail
-    {
-        get => _showTrail;
-        set
-        {
-            if (_showTrail != value)
-            {
-                _showTrail = value;
-                UpdatePluginConfiguration();
-
-                // Notify plugin of trail toggle
-                if (_plugin is PickUpPlugin pickUpPlugin)
-                {
-                    pickUpPlugin.SetShowTrail(value, Player.Position);
-                }
-                else if (_plugin is FillUpPlugin fillUpPlugin)
-                {
-                    fillUpPlugin.SetShowTrail(value, Player.Position, this);
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// Gets or sets the visit threshold (for FillUp mode)
-    /// </summary>
-    public int VisitThreshold
-    {
-        get => _visitThreshold;
-        set
-        {
-            if (_visitThreshold != value)
-            {
-                _visitThreshold = value;
-                UpdatePluginConfiguration();
-
-                // Notify FillUpPlugin of threshold change
-                if (_plugin is FillUpPlugin fillUpPlugin)
-                {
-                    fillUpPlugin.SetVisitThreshold(value);
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// Backward compatibility: Gets visited positions from plugin
-    /// </summary>
-    public HashSet<Position> VisitedPositions
-    {
-        get
-        {
-            if (_plugin is PickUpPlugin pickUpPlugin)
-            {
-                return new HashSet<Position>(pickUpPlugin.VisitedPositions);
-            }
-            else if (_plugin is FillUpPlugin fillUpPlugin)
-            {
-                return new HashSet<Position>(fillUpPlugin.VisitedPositions);
-            }
-            return new HashSet<Position>();
-        }
-    }
 
 
     /// <summary>
@@ -117,9 +48,6 @@ public class Game
         // Initialize with fixed positions by default (UseRandomDroppables defaults to false)
         Droppables = FixedPositions.Select(pos => new Droppable(pos)).ToList();
         State = GameState.Ready;
-
-        // Configure plugin with initial settings
-        UpdatePluginConfiguration();
     }
 
     /// <summary>
@@ -128,21 +56,7 @@ public class Game
     public void SetPlugin(IGridPlugin plugin)
     {
         _plugin = plugin;
-        UpdatePluginConfiguration();
         _plugin.OnGameReset(this);
-    }
-
-    /// <summary>
-    /// Updates plugin configuration with current game settings
-    /// </summary>
-    private void UpdatePluginConfiguration()
-    {
-        var config = new Dictionary<string, object>
-        {
-            { "ShowTrail", _showTrail },
-            { "VisitThreshold", _visitThreshold }
-        };
-        _plugin.Configure(config);
     }
 
     /// <summary>
@@ -160,19 +74,6 @@ public class Game
 
         // Delegate to plugin for game start logic
         _plugin.OnGameStart(this);
-
-        // Initialize trail with starting position when game starts
-        if (ShowTrail)
-        {
-            if (_plugin is PickUpPlugin pickUpPlugin)
-            {
-                pickUpPlugin.SetShowTrail(true, Player.Position);
-            }
-            else if (_plugin is FillUpPlugin fillUpPlugin)
-            {
-                fillUpPlugin.SetShowTrail(true, Player.Position, this);
-            }
-        }
     }
 
     /// <summary>

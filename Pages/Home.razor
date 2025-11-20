@@ -93,7 +93,17 @@ Best: @game.Scores.Item2.ToString("F2")s
     private bool showTrail = false;
     private int visitThreshold = 5;
 
-    private Game game = new Game();
+    // Hold references to concrete plugins for direct configuration
+    private PickUpPlugin? pickUpPlugin = new PickUpPlugin();
+    private FillUpPlugin? fillUpPlugin = null;
+
+    private Game game = new Game(new PickUpPlugin());
+
+    protected override void OnInitialized()
+    {
+        // Keep reference to the plugin used in game initialization
+        pickUpPlugin = game.Plugin as PickUpPlugin;
+    }
 
     private void OnGridVersionChange(ChangeEventArgs e)
     {
@@ -106,14 +116,19 @@ Best: @game.Scores.Item2.ToString("F2")s
             _ => typeof(GridV2)
         };
 
-        // Switch plugin based on version
-        var plugin = version switch
+        // Switch plugin based on version and keep reference for direct configuration
+        if (version == "v2")
         {
-            "v2" => new PickUpPlugin(),
-            "v3" => new FillUpPlugin(),
-            _ => new PickUpPlugin()
-        };
-        game.SetPlugin(plugin);
+            pickUpPlugin = new PickUpPlugin();
+            fillUpPlugin = null;
+            game.SetPlugin(pickUpPlugin);
+        }
+        else if (version == "v3")
+        {
+            fillUpPlugin = new FillUpPlugin();
+            pickUpPlugin = null;
+            game.SetPlugin(fillUpPlugin);
+        }
     }
 
     private void OnRandomDroppablesChange(ChangeEventArgs e)
@@ -126,9 +141,11 @@ Best: @game.Scores.Item2.ToString("F2")s
 
     private void OnShowTrailChange(ChangeEventArgs e)
     {
-        var newTrailState = (bool)(e.Value ?? false);
-        showTrail = newTrailState;
-        game.ShowTrail = showTrail; // Plugin handles the trail logic internally
+        showTrail = (bool)(e.Value ?? false);
+
+        // Configure plugin directly - no need to go through Game
+        pickUpPlugin?.SetShowTrail(showTrail, game.Player.Position);
+        fillUpPlugin?.SetShowTrail(showTrail, game.Player.Position, game);
     }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
@@ -202,17 +219,28 @@ Best: @game.Scores.Item2.ToString("F2")s
     {
         game.DroppableCount = droppableCount;
         game.UseRandomDroppables = useRandomDroppables;
-        game.ShowTrail = showTrail;
-        game.VisitThreshold = visitThreshold;
 
-        // Switch plugin if grid version changed
-        var plugin = selectedGridVersion switch
+        // Switch plugin if grid version changed and keep reference
+        if (selectedGridVersion == "v2")
         {
-            "v2" => new PickUpPlugin(),
-            "v3" => new FillUpPlugin(),
-            _ => new PickUpPlugin()
-        };
-        game.SetPlugin(plugin);
+            pickUpPlugin = new PickUpPlugin();
+            fillUpPlugin = null;
+            game.SetPlugin(pickUpPlugin);
+            gridComponentType = typeof(GridV2);
+        }
+        else if (selectedGridVersion == "v3")
+        {
+            fillUpPlugin = new FillUpPlugin();
+            pickUpPlugin = null;
+            game.SetPlugin(fillUpPlugin);
+            gridComponentType = typeof(GridV3);
+        }
+
+        // Configure plugin directly with UI settings
+        pickUpPlugin?.SetShowTrail(showTrail, game.Player.Position);
+        fillUpPlugin?.SetShowTrail(showTrail, game.Player.Position, game);
+        fillUpPlugin?.SetVisitThreshold(visitThreshold);
+
         game.Reset();
 
         var isOpen = await JS.InvokeAsync<bool>("getPropertyAny", gameConfigDialog, "open");
@@ -272,7 +300,10 @@ Best: @game.Scores.Item2.ToString("F2")s
         else if (key == " ")
         {
             showTrail = !showTrail;
-            game.ShowTrail = showTrail; // Plugin handles the trail logic internally
+
+            // Configure plugin directly
+            pickUpPlugin?.SetShowTrail(showTrail, game.Player.Position);
+            fillUpPlugin?.SetShowTrail(showTrail, game.Player.Position, game);
         }
         else
         {

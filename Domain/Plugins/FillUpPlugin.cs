@@ -22,19 +22,6 @@ public class FillUpPlugin : IGridPlugin
     public string Name => "fillup";
     public string Description => "Fill cells to collect droppables within a visit threshold";
 
-    public void Configure(Dictionary<string, object> config)
-    {
-        if (config.TryGetValue("ShowTrail", out var showTrail) && showTrail is bool trailValue)
-        {
-            _showTrail = trailValue;
-        }
-
-        if (config.TryGetValue("VisitThreshold", out var threshold) && threshold is int thresholdValue)
-        {
-            _visitThreshold = thresholdValue;
-        }
-    }
-
     public void OnGameStart(Game game)
     {
         // Nothing special to do on start

@@ -20,12 +20,6 @@ public interface IGridPlugin
     string Description { get; }
 
     /// <summary>
-    /// Configure the plugin with game-specific settings
-    /// </summary>
-    /// <param name="config">Configuration dictionary (e.g., "ShowTrail", "VisitThreshold")</param>
-    void Configure(Dictionary<string, object> config);
-
-    /// <summary>
     /// Called when the game starts
     /// </summary>
     void OnGameStart(Game game);
